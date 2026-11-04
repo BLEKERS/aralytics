@@ -132,3 +132,18 @@ Chronological log of steps taken during work sessions on this project, kept rega
 71. Confirmed no PRD file existed and reviewed the current route map, setup credentials, login implementation, and frontend interaction patterns. Verified the repository is a frontend-only prototype: demo login accepts non-empty credentials, UI uses sample/local state, and there is no product API or live AI service.
 72. Created `PRD.md` v1.1 aligned to the current two-role, 13-route product. Preserved the original goals and core requirements while clarifying invitation-based account activation (not open sign-up), the English-first scope, removed mood detection, and the distinction between prototype UI and production requirements for authentication, activity persistence, AI feedback, reports, notifications, privacy, and scale.
 73. Registered `PRD.md` in `FILETREE.md` and the repository structure section of `SETUP.md`.
+
+---
+
+## Session 2026-11-04 (GitHub repository setup checklist)
+
+74. Implemented the repository-setup checklist (private repo, README, .gitignore, .env.example, CONTRIBUTING.md, docs/requirements.md, docs/architecture.md, docs/team-roles.md, src/ and tests/) by dispatching 4 parallel subagents that each wrote disjoint files, keeping the existing `frontend/src` layout instead of a root `src/`:
+    - `README.md`: replaced the stock Vite template with project summary, problem, users (Miguel / Mr. Reyes / Dr. Santos), 13-screen feature tables, tech stack, docs map, setup steps (credentials stay in SETUP.md only), branching summary, team table placeholder, task-board link placeholder, and repo URL.
+    - `docs/architecture.md`: high-level browser→SPA→future-backend diagram, 13-route map with layout chrome, AppShell vs standalone split, design-system pointers, quality gates, and data/state status (sample data, no API client).
+    - `frontend/tests/README.md`: initialized the tests directory with strategy (unit + component smoke via a runner to choose, Playwright checks at 320/390/768/1024/1440 widths, role-flow checks) and a how-to-run placeholder.
+    - `docs/requirements.md`: pointer document declaring `../PRD.md` canonical, MVP scope summary with FR IDs, requirement-change process, and a 2026-11-04 status stamp (PRD v1.1).
+    - `docs/team-roles.md`: empty team roster table plus role archetypes (Project Lead/Coordinator incl. repo settings, Frontend Developer, Backend & AI Engineer, QA & Documentation, Instructor/Faculty Advisor).
+    - `CONTRIBUTING.md`: getting started + lint/build merge gates, branch naming (`main`, `feature/<issue>-<short-name>`, `fix/<issue>-<short-name>`), descriptive commit rules, one-peer-review PR policy, protected `main`, secrets policy with `.env.example`.
+    - `.env.example`: commented Vite environment template (no variables required today; `VITE_API_BASE_URL` as a future example). `.gitignore` already ignores `.env*` except `.env.example`.
+75. Checked `gh` CLI availability for the GitHub-side checklist items: not installed, so making the repo private, inviting members, and protecting `main` must be done by the repo owner in the GitHub web UI (repo: github.com/dassel-avg-dev/aralytics).
+76. Updated `FILETREE.md` (.env.example, CONTRIBUTING.md, docs/, frontend/tests/README.md) and this `LOG.md`; committed the docs additions while leaving the pre-existing uncommitted `.gitignore` edit (`opencode.json` ignore line) unstaged for the owner to decide.

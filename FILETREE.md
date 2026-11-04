@@ -5,12 +5,18 @@ Every directory and file in the repository, its responsibility, and which Stitch
 ```text
 aralytics/
 ├── .gitignore                              # Excludes node_modules, dist, .env*, editor junk, and root /screens/ + /fetch-screens.mjs
+├── .env.example                            # Frontend environment template (VITE_* prefix; no variables currently required)
+├── CONTRIBUTING.md                         # Enforced workflow: branch naming, commits, PR review, main protection, secrets policy
 ├── SETUP.md                                # Developer quick-start, workspace commands, and default Student/Teacher credentials
 ├── NAVIGATION.md                           # Frontend screen routes, navigation links, and backend /api/* endpoint map
 ├── PRD.md                                   # Project-aligned product requirements; distinguishes prototype UI from planned production behavior
 ├── HANDOFF.md                              # Architecture, design tokens, route map, Stitch -> React conversion rules
 ├── LOG.md                                  # Chronological append-only log of every agent action
 ├── FILETREE.md                             # This file — directory & file purpose map
+├── docs/                                   # Project documentation (pointer + supporting docs; PRD.md remains canonical)
+│   ├── requirements.md                     # Requirements index: canonical source is ../PRD.md; change process + MVP scope summary
+│   ├── architecture.md                     # Frontend architecture: routes, layout modes, tooling, data/state status, testing pointer
+│   └── team-roles.md                       # Team roster placeholders and role archetype descriptions
 ├── fetch-screens.mjs                       # Script to fetch Stitch HTML + screenshots into screens/stitch/ (gitignored)
 │
 ├── screens/                                # RAW STITCH EXPORTS (gitignored via /screens/; reference only — never imported at runtime)
@@ -60,6 +66,9 @@ aralytics/
     ├── package.json                        # Dependencies: react 19, react-dom 19, react-router-dom 7, @tailwindcss/vite 4, vite 8, oxlint
     ├── package-lock.json                   # Locked dependency tree
     ├── vite.config.js                      # Vite 8 config with @vitejs/plugin-react and @tailwindcss/vite
+    │
+    ├── tests/                              # Automated test home (no test files yet; strategy in tests/README.md)
+    │   └── README.md                       # Test strategy: unit + smoke tests once a runner is chosen; Playwright route checks
     │
     ├── public/                             # Static assets served at /
     │   ├── favicon.svg                     # Browser tab icon: primary rounded-square school mark + amber dot (matches BrandLogo)
