@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
+import { api, getStoredClasses, getStoredUser } from '../../api/client'
+import { useApiResource } from '../../api/useApiResource'
+import { DataError, LoadingBlock } from '../../components/DataState'
 
 const FILTER_TAB_ACTIVE =
   'px-3 py-1 rounded-lg bg-surface-container-lowest text-primary font-label-sm text-label-sm font-bold shadow-xs transition-all'
@@ -18,11 +21,140 @@ const MASTERY_FILTERS = [
 ]
 
 const ROSTER_FILTERS = [
-  { value: 'all', label: 'All (42)' },
-  { value: 'on-track', label: 'On Track (29)' },
-  { value: 'needs-nudge', label: 'Needs Nudge (9)' },
-  { value: 'needs-help', label: 'Needs Help (4)' },
+  { value: 'all', label: 'All' },
+  { value: 'on-track', label: 'On Track' },
+  { value: 'needs-nudge', label: 'Needs Nudge' },
+  { value: 'needs-help', label: 'Needs Help' },
 ]
+
+const STATUS_META = {
+  'on-track': {
+    label: 'On Track (≥70%)',
+    modal: 'On Track',
+    color: 'text-[#22A06B]',
+    dot: 'bg-[#22A06B]',
+    bar: 'bg-[#22A06B]',
+  },
+  'needs-nudge': {
+    label: 'Needs Nudge (<75%)',
+    modal: 'Needs a Nudge',
+    color: 'text-tertiary',
+    dot: 'bg-[#F4BF32]',
+    bar: 'bg-tertiary-fixed-dim',
+  },
+  'needs-help': {
+    label: 'Needs Help (<70%)',
+    modal: 'Needs Help',
+    color: 'text-error',
+    dot: 'bg-error',
+    bar: 'bg-error',
+  },
+}
+
+function conceptVisual(concept, index) {
+  const name = concept?.concept || `Concept ${index + 1}`
+  const key = name.toLowerCase()
+  const pct = Math.max(0, Math.min(100, Math.round(Number(concept?.masteryLevel) || 0)))
+
+  let emoji = '📘'
+  let category = 'Syntax'
+  let emojiColor = 'text-primary'
+  let barColor = 'bg-primary-container'
+
+  if (/loop|iterat|while|for /.test(key)) {
+    emoji = '🔁'
+    category = 'Logic'
+  } else if (/condition|boolean|branch|if /.test(key)) {
+    emoji = '🔀'
+    category = 'Logic'
+  } else if (/function|scope|return/.test(key)) {
+    emoji = '⚙️'
+    category = 'Functions'
+    emojiColor = 'text-secondary'
+  } else if (/syntax|error|debug|variable|data type/.test(key)) {
+    emoji = '🐛'
+    category = 'Syntax'
+    emojiColor = 'text-tertiary'
+  }
+
+  if (pct >= 80) {
+    barColor = 'bg-[#22A06B]'
+  } else if (pct < 70) {
+    emojiColor = 'text-tertiary'
+    barColor = 'bg-tertiary-fixed-dim'
+  }
+
+  return {
+    emoji,
+    emojiColor,
+    name,
+    category,
+    pct,
+    pctColor: pct >= 80 ? 'text-[#22A06B]' : pct >= 70 ? 'text-primary' : 'text-tertiary',
+    barColor,
+  }
+}
+
+function statusForScore(score, threshold) {
+  if (score < threshold) return 'needs-help'
+  if (score < threshold + 5) return 'needs-nudge'
+  return 'on-track'
+}
+
+function formatDate(value) {
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '—'
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
+
+function mapRosterItem(item, threshold) {
+  const score = item.averageScore == null ? 0 : Math.round(Number(item.averageScore))
+  const statusValue = statusForScore(score, threshold)
+  const status = STATUS_META[statusValue]
+  const mastery = Array.isArray(item.mastery) ? item.mastery : []
+  const latest = mastery
+    .map((entry) => entry.lastUpdated)
+    .filter(Boolean)
+    .sort()
+    .at(-1)
+  const focus = mastery
+    .slice()
+    .sort((a, b) => (a.masteryLevel ?? 0) - (b.masteryLevel ?? 0))
+    .slice(0, 2)
+    .map((entry) => `${entry.concept} ${Math.round(Number(entry.masteryLevel) || 0)}%`)
+    .join(' · ')
+
+  return {
+    raw: item,
+    id: `STU-${item.studentId}`,
+    studentId: item.studentId,
+    initials: (item.fullName || '?')
+      .split(' ')
+      .filter(Boolean)
+      .map((part) => part[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase(),
+    name: item.fullName || item.username || `Student ${item.studentId}`,
+    section: 'Section A',
+    score,
+    scoreColor: status.color,
+    barColor: status.bar,
+    trend: 'Stable',
+    trendColor: 'text-on-surface-variant',
+    statusValue,
+    statusLabel: status.label,
+    statusColor: status.color,
+    statusDot: status.dot,
+    lastActive: formatDate(latest),
+    mailTitle: statusValue === 'on-track' ? 'Send Praise' : 'Send Hint',
+    modalStatus: status.modal,
+    observation: focus
+      ? `Current mastery focus: ${focus}.`
+      : 'No diagnostic mastery records have been generated for this student yet.',
+  }
+}
 
 const BENCHMARK_TABLE = [
   { week: 'Week 1', assessment: 'Variables & Data Types (int, float, str)', score: '72.0%', delta: '-8.0%', deltaClass: 'text-error' },
@@ -205,6 +337,54 @@ export default function TeacherDashboard() {
   const toastTimer = useRef(null)
   const exportTimer = useRef(null)
 
+  // Live cohort data. Both endpoints are part of the 40% milestone.
+  const dashboard = useApiResource(() => api.teacher.dashboard(), [])
+  const roster = useApiResource(() => api.teacher.students({ page: 1, size: 100 }), [])
+  const [page, setPage] = useState(1)
+  const user = getStoredUser()
+  const classLabel = getStoredClasses()[0]?.name || 'CS 101 - Intro to Python (Section A)'
+  const threshold = dashboard.data?.threshold ?? 70
+
+  const rosterStudents = (Array.isArray(roster.data?.items) ? roster.data.items : []).map((item) =>
+    mapRosterItem(item, threshold)
+  )
+  const statusCounts = rosterStudents.reduce(
+    (counts, student) => {
+      counts.all += 1
+      counts[student.statusValue] += 1
+      return counts
+    },
+    { all: 0, 'on-track': 0, 'needs-nudge': 0, 'needs-help': 0 }
+  )
+  const rosterFilters = ROSTER_FILTERS.map((filter) => ({
+    ...filter,
+    label: `${filter.label} (${statusCounts[filter.value]})`,
+  }))
+
+  const filteredStudents = rosterStudents.filter(
+    (student) =>
+      (rosterFilter === 'all' || student.statusValue === rosterFilter) &&
+      student.name.toLowerCase().includes(studentSearch.toLowerCase().trim())
+  )
+  const pageSize = 6
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / pageSize))
+  const currentPage = Math.min(page, totalPages)
+  const pagedStudents = filteredStudents.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  )
+  const showingFrom = filteredStudents.length === 0 ? 0 : (currentPage - 1) * pageSize + 1
+  const showingTo = Math.min(currentPage * pageSize, filteredStudents.length)
+  const firstPageInWindow = Math.max(1, Math.min(currentPage - 2, totalPages - 4))
+  const pageNumbers = []
+  for (let p = firstPageInWindow; p <= Math.min(totalPages, firstPageInWindow + 4); p += 1) {
+    pageNumbers.push(p)
+  }
+
+  useEffect(() => {
+    setPage(1)
+  }, [rosterFilter, studentSearch])
+
   useEffect(
     () => () => {
       clearTimeout(toastTimer.current)
@@ -250,15 +430,46 @@ export default function TeacherDashboard() {
     }, 900)
   }
 
-  const visibleConcepts = CONCEPT_SCORES.filter(
-    (c) => masteryFilter === 'All' || c.category === masteryFilter
+  const apiConcepts = (Array.isArray(dashboard.data?.classConceptMastery)
+    ? dashboard.data.classConceptMastery
+    : []
+  ).map(conceptVisual)
+  const conceptSource = apiConcepts.length ? apiConcepts : CONCEPT_SCORES
+  const visibleConcepts = conceptSource.filter(
+    (concept) => masteryFilter === 'All' || concept.category === masteryFilter
   )
 
-  const visibleStudents = ROSTER_STUDENTS.filter(
-    (s) =>
-      (rosterFilter === 'all' || s.statusValue === rosterFilter) &&
-      s.name.toLowerCase().includes(studentSearch.toLowerCase().trim())
-  )
+  const statusDistribution = [
+    { value: 'on-track', color: '#22A06B', label: 'On Track' },
+    { value: 'needs-nudge', color: '#F4BF32', label: 'Needs a Nudge' },
+    { value: 'needs-help', color: '#BA1A1A', label: 'Needs Help' },
+  ]
+  const distributionTotal = rosterStudents.length
+  const distributionCircumference = 2 * Math.PI * 38
+  const percentOfCohort = (count) =>
+    distributionTotal ? Math.round((count / distributionTotal) * 100) : 0
+
+  let distributionOffset = 0
+  const distributionSegments = statusDistribution.map((segment) => {
+    const count = statusCounts[segment.value] || 0
+    const pct = percentOfCohort(count)
+    const dash = (pct / 100) * distributionCircumference
+    const circle = {
+      ...segment,
+      count,
+      pct,
+      dasharray: `${dash} ${distributionCircumference}`,
+      dashoffset: -distributionOffset,
+    }
+    distributionOffset += dash
+    return circle
+  })
+
+  const formatMetric = (value, suffix = '%') =>
+    value === null || value === undefined ? '—' : `${Number(value).toFixed(1)}${suffix}`
+  const studentCount = dashboard.data?.studentCount ?? rosterStudents.length
+  const belowThresholdCount = dashboard.data?.belowThresholdCount ?? statusCounts['needs-help']
+  const firstName = user?.fullName?.split(' ')[0] || 'Teacher'
 
   return (
     <div className="max-w-[1120px] mx-auto p-margin">
@@ -267,10 +478,10 @@ export default function TeacherDashboard() {
         <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-space-md mb-space-lg">
           <div className="flex flex-col">
             <div className="flex items-center gap-space-xs mb-1">
-              <span className="font-headline-lg text-headline-lg text-on-surface">Welcome back, Mr. Reyes!</span>
+              <span className="font-headline-lg text-headline-lg text-on-surface">Welcome back, {firstName}!</span>
               <span className="text-2xl animate-bounce">💻</span>
             </div>
-            <p className="font-body-md text-body-md text-on-surface-variant">Here is your coding cohort analytics for <span className="font-semibold text-on-surface">CS 101 - Intro to Python (Section A)</span>. <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-error-container/50 text-error font-label-sm text-label-sm font-medium">4 students flagged (&lt;70% threshold)</span></p>
+            <p className="font-body-md text-body-md text-on-surface-variant">Here is your coding cohort analytics for <span className="font-semibold text-on-surface">{classLabel}</span>. <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-error-container/50 text-error font-label-sm text-label-sm font-medium">{belowThresholdCount} students flagged (&lt;{threshold}% threshold)</span></p>
           </div>
           {/* Quick Controls */}
           <div className="flex flex-wrap items-center gap-space-xs">
@@ -298,6 +509,19 @@ export default function TeacherDashboard() {
             </button>
           </div>
         </div>
+        {(dashboard.loading || roster.loading) && (
+          <LoadingBlock className="mb-space-lg" label="Loading cohort analytics from the backend…" />
+        )}
+        {(dashboard.error || roster.error) && (
+          <DataError
+            className="mb-space-lg"
+            error={dashboard.error || roster.error}
+            onRetry={() => {
+              dashboard.reload()
+              roster.reload()
+            }}
+          />
+        )}
         {/* ROW 1: 4 Key Metric Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-md mb-space-lg">{/* Stat 1: Cohort Test Pass Rate */}
           <div className="bg-surface-container-lowest rounded-2xl p-space-md shadow-xs flex flex-col justify-between hover:shadow-sm transition-shadow">
@@ -308,13 +532,13 @@ export default function TeacherDashboard() {
               </div>
             </div>
             <div className="flex items-baseline gap-space-xs mb-space-xs">
-              <span className="font-metric-number text-metric-number text-on-surface tracking-tight">84.6%</span>
+              <span className="font-metric-number text-metric-number text-on-surface tracking-tight">{formatMetric(dashboard.data?.classAverage)}</span>
             </div>
             <div className="flex items-center gap-1.5 text-body-sm">
               <span className="inline-flex items-center font-label-sm text-[#22A06B] font-semibold">
-                <span className="material-symbols-outlined text-[14px] mr-0.5">trending_up</span>+3.2%
+                <span className="material-symbols-outlined text-[14px] mr-0.5">groups</span>{studentCount}
               </span>
-              <span className="text-on-surface-variant font-body-sm">vs Lab 5</span>
+              <span className="text-on-surface-variant font-body-sm">learners in this cohort</span>
             </div>
           </div>
           {/* Stat 2: Lab Submissions */}
@@ -326,14 +550,14 @@ export default function TeacherDashboard() {
               </div>
             </div>
             <div className="flex items-baseline gap-space-xs mb-space-xs">
-              <span className="font-metric-number text-metric-number text-on-surface tracking-tight">92.8%</span>
-              <span className="font-body-sm text-body-sm text-on-surface-variant">(39/42)</span>
+              <span className="font-metric-number text-metric-number text-on-surface tracking-tight">{formatMetric(dashboard.data?.completionRate)}</span>
+              <span className="font-body-sm text-body-sm text-on-surface-variant">({studentCount} learners)</span>
             </div>
             <div className="flex items-center gap-1.5 text-body-sm">
               <span className="inline-flex items-center font-label-sm text-[#22A06B] font-semibold">
-                <span className="material-symbols-outlined text-[14px] mr-0.5">trending_up</span>+5.0%
+                <span className="material-symbols-outlined text-[14px] mr-0.5">check_circle</span>Submitted
               </span>
-              <span className="text-on-surface-variant font-body-sm truncate">While Loops &amp; Conditionals</span>
+              <span className="text-on-surface-variant font-body-sm truncate">published activity completion</span>
             </div>
           </div>
           {/* Stat 3: Flagged for Intervention */}
@@ -345,11 +569,11 @@ export default function TeacherDashboard() {
               </div>
             </div>
             <div className="flex items-baseline gap-space-xs mb-space-xs">
-              <span className="font-metric-number text-metric-number text-error tracking-tight">4</span>
+              <span className="font-metric-number text-metric-number text-error tracking-tight">{belowThresholdCount}</span>
               <span className="font-body-md text-body-md text-on-surface-variant">students</span>
             </div>
             <div className="flex items-center justify-between text-body-sm">
-              <span className="text-on-surface-variant">Scored &lt;70% threshold</span>
+              <span className="text-on-surface-variant">Scored &lt;{threshold}% threshold</span>
               <a className="font-label-sm text-label-sm text-primary font-semibold hover:underline inline-flex items-center gap-0.5" href="#needs-attention-section">
                 Review Bugs <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
               </a>
@@ -358,18 +582,18 @@ export default function TeacherDashboard() {
           {/* Stat 4: Active Coding Time & Streak */}
           <div className="bg-surface-container-lowest rounded-2xl p-space-md shadow-xs flex flex-col justify-between hover:shadow-sm transition-shadow">
             <div className="flex items-center justify-between mb-space-xs">
-              <span className="font-label-md text-label-md text-on-surface-variant">Active Coding Time</span>
+              <span className="font-label-md text-label-md text-on-surface-variant">Cohort Learners</span>
               <div className="w-7 h-7 rounded-full bg-surface-container-low flex items-center justify-center text-tertiary">
                 <span className="material-symbols-outlined text-[16px]">timer</span>
               </div>
             </div>
             <div className="flex items-baseline gap-space-xs mb-space-xs">
-              <span className="font-metric-number text-metric-number text-on-surface tracking-tight">38</span>
-              <span className="font-body-sm text-body-sm text-on-surface-variant">/ 42 active</span>
+              <span className="font-metric-number text-metric-number text-on-surface tracking-tight">{studentCount}</span>
+              <span className="font-body-sm text-body-sm text-on-surface-variant">enrolled</span>
             </div>
             <div className="flex items-center justify-between text-body-sm text-on-surface-variant">
-              <span className="truncate max-w-[130px]">Top streak: Miguel R.</span>
-              <span className="font-label-sm text-label-sm text-tertiary font-semibold">7d streak</span>
+              <span className="truncate max-w-[130px]">{statusCounts['on-track']} on track</span>
+              <span className="font-label-sm text-label-sm text-tertiary font-semibold">{statusCounts['needs-help']} flagged</span>
             </div>
           </div>
         </div>
@@ -491,7 +715,7 @@ export default function TeacherDashboard() {
             <div>
               <div className="flex items-center justify-between mb-space-xs">
                 <h3 className="font-headline-sm text-headline-sm text-on-surface">Status Distribution</h3>
-                <span className="font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full">42 Learners</span>
+                <span className="font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full">{studentCount} Learners</span>
               </div>
               <p className="font-body-sm text-body-sm text-on-surface-variant mb-space-md">Real-time risk triage breakdown</p>
               {/* SVG Donut Chart with Centered Total */}
@@ -499,50 +723,51 @@ export default function TeacherDashboard() {
                 <svg className="w-44 h-44 -rotate-90" viewBox="0 0 100 100">
                   {/* Background circle ring */}
                   <circle cx="50" cy="50" fill="none" r="38" stroke="#EDECFF" strokeWidth="12" />
-                  {/* Segment 1: On Track (69% -> stroke-dasharray 164.7, 238.7) */}
-                  <circle cx="50" cy="50" fill="none" r="38" stroke="#22A06B" strokeDasharray="164.7 238.7" strokeDashoffset="0" strokeLinecap="round" strokeWidth="12" />
-                  {/* Segment 2: Needs a Nudge (21% -> 50.1) offset 164.7 */}
-                  <circle cx="50" cy="50" fill="none" r="38" stroke="#F4BF32" strokeDasharray="50.1 238.7" strokeDashoffset="-164.7" strokeLinecap="round" strokeWidth="12" />
-                  {/* Segment 3: Needs Help (10% -> 23.9) offset 214.8 */}
-                  <circle cx="50" cy="50" fill="none" r="38" stroke="#BA1A1A" strokeDasharray="23.9 238.7" strokeDashoffset="-214.8" strokeLinecap="round" strokeWidth="12" />
+                  {/* Live risk segments derived from /api/teacher/students */}
+                  {distributionSegments.map((segment) => (
+                    <circle
+                      key={segment.value}
+                      cx="50"
+                      cy="50"
+                      fill="none"
+                      r="38"
+                      stroke={segment.color}
+                      strokeDasharray={segment.dasharray}
+                      strokeDashoffset={segment.dashoffset}
+                      strokeLinecap="round"
+                      strokeWidth="12"
+                    />
+                  ))}
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                  <span className="font-headline-lg text-headline-lg text-on-surface font-black leading-none">42</span>
+                  <span className="font-headline-lg text-headline-lg text-on-surface font-black leading-none">{studentCount}</span>
                   <span className="font-label-sm text-label-sm text-on-surface-variant mt-1">Enrolled</span>
                 </div>
               </div>
-              {/* Distribution Triage Legend */}
+              {/* Distribution Triage Legend (derived from live roster) */}
               <div className="flex flex-col gap-2 mt-space-md">
-                <div className="flex items-center justify-between py-1.5 px-2.5 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#22A06B]" />
-                    <span className="font-label-md text-label-md text-on-surface">On Track</span>
+                {distributionSegments.map((segment) => (
+                  <div
+                    className="flex items-center justify-between py-1.5 px-2.5 rounded-lg"
+                    key={segment.value}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full"
+                        style={{ backgroundColor: segment.color }}
+                      />
+                      <span className="font-label-md text-label-md text-on-surface">
+                        {segment.label}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 font-label-md text-label-md text-on-surface">
+                      <span className={segment.value === 'needs-help' ? 'font-semibold text-error' : 'font-semibold'}>
+                        {segment.count}
+                      </span>
+                      <span className="text-on-surface-variant font-normal">({segment.pct}%)</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5 font-label-md text-label-md text-on-surface">
-                    <span className="font-semibold">29</span>
-                    <span className="text-on-surface-variant font-normal">(69%)</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between py-1.5 px-2.5 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#F4BF32]" />
-                    <span className="font-label-md text-label-md text-on-surface">Needs a Nudge</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 font-label-md text-label-md text-on-surface">
-                    <span className="font-semibold">9</span>
-                    <span className="text-on-surface-variant font-normal">(21%)</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between py-1.5 px-2.5 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-error" />
-                    <span className="font-label-md text-label-md text-on-surface">Needs Help</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 font-label-md text-label-md text-on-surface">
-                    <span className="font-semibold text-error">4</span>
-                    <span className="text-on-surface-variant font-normal">(10%)</span>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
             {/* Quick AI Diagnostic Highlight */}
@@ -611,9 +836,9 @@ export default function TeacherDashboard() {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-headline-sm text-headline-sm text-on-surface">Student Directory &amp; Progress</h3>
-                <span className="font-label-sm text-label-sm bg-surface-container px-2 py-0.5 rounded-full text-on-surface-variant">42 learners</span>
+                <span className="font-label-sm text-label-sm bg-surface-container px-2 py-0.5 rounded-full text-on-surface-variant">{statusCounts.all} learners</span>
               </div>
-              <p className="font-body-sm text-body-sm text-on-surface-variant">CS 101 Intro to Python · Continuous Automated Lab Evaluations</p>
+              <p className="font-body-sm text-body-sm text-on-surface-variant">{classLabel} · Continuous Automated Lab Evaluations</p>
             </div>
             <div className="flex flex-wrap items-center gap-space-xs">
               {/* Search bar inside table header */}
@@ -629,7 +854,7 @@ export default function TeacherDashboard() {
               </div>
               {/* Filter Pill Tabs */}
               <div className="flex items-center bg-surface-container p-1 rounded-xl">
-                {ROSTER_FILTERS.map((f) => (
+                {rosterFilters.map((f) => (
                   <button
                     className={rosterFilter === f.value ? FILTER_TAB_ACTIVE : FILTER_TAB_IDLE}
                     key={f.value}
@@ -664,7 +889,7 @@ export default function TeacherDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y-0 text-on-surface">
-                {visibleStudents.map((s) => (
+                {pagedStudents.map((s) => (
                   <tr className="hover:bg-surface-container-low/50 transition-colors" key={s.id}>
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-3">
@@ -714,22 +939,58 @@ export default function TeacherDashboard() {
                     </td>
                   </tr>
                 ))}
+                {pagedStudents.length === 0 && (
+                  <tr>
+                    <td className="py-8 px-4 text-center text-on-surface-variant font-body-sm" colSpan={7}>
+                      {roster.loading
+                        ? 'Loading learners from the backend…'
+                        : roster.error
+                          ? 'Learner data is unavailable. Check that the backend is running, then retry.'
+                          : rosterStudents.length === 0
+                            ? 'No learners are enrolled in this cohort yet.'
+                            : 'No learners match this filter or search.'}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
           {/* Pagination Footer */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-space-sm pt-space-md mt-space-sm">
-            <span className="font-body-sm text-body-sm text-on-surface-variant">Showing 1 to 7 of 42 students</span>
+            <span className="font-body-sm text-body-sm text-on-surface-variant">
+              {filteredStudents.length === 0
+                ? `Showing 0 of ${rosterStudents.length} students`
+                : `Showing ${showingFrom} to ${showingTo} of ${filteredStudents.length} students`}
+            </span>
             <div className="flex items-center gap-1">
-              <button className="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface disabled:opacity-50" disabled type="button">
+              <button
+                className="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface disabled:opacity-50"
+                disabled={currentPage <= 1}
+                onClick={() => setPage((value) => Math.max(1, value - 1))}
+                type="button"
+              >
                 <span className="material-symbols-outlined text-[18px]">chevron_left</span>
               </button>
-              <button className="w-8 h-8 rounded-lg bg-primary-container text-on-primary font-label-sm text-label-sm font-bold" type="button">1</button>
-              <button className="w-8 h-8 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-sm text-label-sm" type="button">2</button>
-              <button className="w-8 h-8 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-sm text-label-sm" type="button">3</button>
-              <span className="px-1 text-on-surface-variant text-xs">...</span>
-              <button className="w-8 h-8 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-sm text-label-sm" type="button">6</button>
-              <button className="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-on-surface hover:text-primary" type="button">
+              {pageNumbers.map((pageNumber) => (
+                <button
+                  className={
+                    pageNumber === currentPage
+                      ? 'w-8 h-8 rounded-lg bg-primary-container text-on-primary font-label-sm text-label-sm font-bold'
+                      : 'w-8 h-8 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-sm text-label-sm'
+                  }
+                  key={pageNumber}
+                  onClick={() => setPage(pageNumber)}
+                  type="button"
+                >
+                  {pageNumber}
+                </button>
+              ))}
+              <button
+                className="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-on-surface hover:text-primary disabled:opacity-50 disabled:hover:text-on-surface"
+                disabled={currentPage >= totalPages}
+                onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
+                type="button"
+              >
                 <span className="material-symbols-outlined text-[18px]">chevron_right</span>
               </button>
             </div>
