@@ -17,6 +17,39 @@ aralytics/
 │   ├── requirements.md                     # Requirements index: canonical source is ../PRD.md; change process + MVP scope summary
 │   ├── architecture.md                     # Frontend architecture: routes, layout modes, tooling, data/state status, testing pointer
 │   └── team-roles.md                       # Team roster placeholders and role archetype descriptions
+├── backend/                                # Spring Boot 3.4 / Java 21 REST API (40% milestone); see backend/README.md
+│   ├── pom.xml                             # Dependencies (Web, JPA, Security, Validation, Actuator, Flyway, JJWT, springdoc) + failsafe *IT.java
+│   ├── mvnw / mvnw.cmd                     # Maven wrapper (Maven 3.9.9)
+│   ├── .mvn/wrapper/                       # Maven wrapper properties/jar
+│   ├── README.md                           # Backend setup, env vars, API map, security/data decisions, tests, limitations
+│   ├── .env.example                        # Backend environment template (DB, JWT, activation keys, CORS, optional AI)
+│   ├── .gitignore / .dockerignore          # Backend build output, .env, IDE files; Docker build context excludes
+│   ├── Dockerfile                          # Multi-stage Maven build + Temurin 21 JRE, non-root runtime
+│   ├── docker-compose.yml                  # MySQL 8.4 (healthcheck) + backend API on :8080, dev profile
+│   ├── src/main/resources/
+│   │   ├── application.yml                 # Base config: datasource, JPA, Flyway, JWT/activation/CORS properties, health-only Actuator
+│   │   ├── application-dev.yml             # Dev profile: dev seed + Swagger UI + debug logging
+│   │   ├── application-prod.yml            # Prod profile: migrations only, Swagger disabled
+│   │   ├── db/migration/V1__init.sql       # ERD schema (15 tables incl. QUESTION_CONCEPT)
+│   │   └── db/seed/V2__seed_dev.sql        # Idempotent demo school/users/class/activities/submission/feedback
+│   ├── src/main/java/ph/aralytics/backend/
+│   │   ├── AralyticsApplication.java        # Spring Boot entry point
+│   │   ├── ai/                             # DiagnosticEngine.java (seam), MockDiagnosticEngine.java (default), LlmDiagnosticEngine.java (ai-profile stub)
+│   │   ├── config/                         # AralyticsProperties, SecurityConfig, CorsConfig, JacksonConfig, OpenApiConfig
+│   │   ├── domain/                         # JPA entities for the ERD + Role/QuizStatus/SubscriptionStatus/QuestionOption
+│   │   ├── exception/                      # ApiException + BadRequest/Conflict/Forbidden/InvalidCredentials/NotFound/NotImplemented, GlobalExceptionHandler
+│   │   ├── repository/                     # Spring Data repositories for users, classes, quizzes, submissions, feedback, progress, notifications
+│   │   ├── security/                       # JwtService, JwtFilter, JwtDenylist, CustomUserDetailsService, AuthenticatedPrincipal, UserPrincipal
+│   │   ├── service/                        # AuthService, QuizService, QuizDraftStore, SubmissionService, SubmissionPersistenceService, DiagnosticService, FeedbackService, DashboardService, RosterService, ActivationTokenStore, DtoMapper
+│   │   └── web/                            # AuthController, PublicController, student/*, teacher/*, and DTO records (Auth/Student/Teacher/Common)
+│   └── src/test/
+│       ├── java/ph/aralytics/backend/
+│       │   ├── ai/MockDiagnosticEngineTest.java      # Feedback length, concepts, fallback, no answer leakage
+│       │   ├── it/                                   # AuthFlowIT, QuizLifecycleIT, AuthorizationIT, SubmitIdempotencyIT, MySQLMigrationIT
+│       │   └── support/AbstractApiIT.java            # Shared MockMvc, activation, login, and authoring helpers
+│       └── resources/
+│           ├── application-test.yml                  # H2 MySQL-mode datasource, Hibernate create-drop, Flyway off
+│           └── data.sql                              # H2-compatible seed (JSON FORMAT JSON, identity restarts)
 ├── fetch-screens.mjs                       # Script to fetch Stitch HTML + screenshots into screens/stitch/ (gitignored)
 │
 ├── screens/                                # RAW STITCH EXPORTS (gitignored via /screens/; reference only — never imported at runtime)
