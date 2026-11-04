@@ -1,0 +1,49 @@
+# Integration tests run against H2 in MySQL compatibility mode. Flyway is disabled because
+# the MySQL migrations use MySQL-only DDL; Hibernate creates the schema and data.sql loads
+# the same demo fixtures as db/seed/V2__seed_dev.sql.
+spring:
+  datasource:
+    url: jdbc:h2:mem:aralytics;MODE=MySQL;DATABASE_TO_LOWER=TRUE;NON_KEYWORDS=USER,VALUE,CLASS;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: create-drop
+    defer-datasource-initialization: true
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: false
+  sql:
+    init:
+      mode: always
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+aralytics:
+  jwt:
+    secret: integration-test-secret-integration-test-secret-0123456789
+    expiration-minutes: 60
+  activation:
+    student-key: KEY-8821-PY
+    teacher-key: FAC-2025-DEPED
+    token-ttl-minutes: 15
+  intervention:
+    threshold: 70
+  cors:
+    allowed-origins:
+      - http://localhost:3000
+      - http://localhost:5173
+
+logging:
+  level:
+    root: WARN
+    ph.aralytics.backend: INFO

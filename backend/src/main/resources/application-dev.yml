@@ -1,0 +1,19 @@
+# Development profile: applies schema migrations plus the idempotent demo seed and
+# exposes Swagger UI. Never use this profile in production.
+spring:
+  flyway:
+    locations: classpath:db/migration,classpath:db/seed
+  jpa:
+    show-sql: false
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+
+logging:
+  level:
+    ph.aralytics.backend: DEBUG
+    org.flywaydb: INFO
