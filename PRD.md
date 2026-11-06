@@ -1,295 +1,193 @@
-# Aralytics Product Requirements Document
+# Aralytics - Product Requirements Document (PRD)
 
-**Version:** 1.1  
-**Date:** October 29, 2026  
-**Author:** Product team (TBD)  
-**Status:** Project-aligned draft; the repository currently contains a frontend prototype, not a production service.
-
-> This document describes the intended product and distinguishes it from what the current prototype actually implements. A screen or demo interaction is not evidence of a production backend capability.
+**Version:** 2.0
+**Date:** November 5, 2026
+**Author:** James Benedict De la Peña, Dassel Bacaltos, Kharil Christian Tumamak
+**Status:** MVP Core Complete (40% Backend / Frontend Integration)
 
 ---
 
 ## 1. Executive Summary
 
-Aralytics is an AI-supported coding education platform for Philippine schools and Computer Science teachers. It is intended to help students understand mistakes through timely, specific, encouraging diagnostic feedback, while giving teachers a practical view of individual and class-wide learning needs.
+Aralytics is an AI-powered learning platform designed to address the critical issue of generic and delayed feedback in coding education. By providing personalized, immediate feedback to students learning to code, Aralytics aims to boost learner engagement, motivation, and academic performance. The platform empowers teachers with a diagnostic dashboard to monitor student progress and intervene effectively, making personalized education scalable even in large classes. 
 
-The first release targets private schools and individual coding teachers in the Philippines, with high-school Computer Science and Python as the initial learning context. The product has two application roles: **Student** and **Teacher**. School administrators may purchase the service and provision accounts, but an administrator role is not part of the current application prototype.
-
-The repository currently implements a responsive React frontend with 13 routed screens. Sign-in, account activation, data, reports, and AI-related interactions are demo UI only. No product API, durable data store, production authentication, or live AI inference is currently connected.
+**Current State:** The project has moved from a purely visual frontend prototype to a functional full-stack application. The foundational backend (Authentication, Database, Quiz Engine, and Mock AI Diagnostic Feedback) is live and tested. This document defines the requirements for completing the remaining features (the "60%").
 
 ---
 
 ## 2. Problem Statement
 
-Students learning to code often receive feedback that is generic or too late to help them understand a mistake. When they cannot identify which concept or line of reasoning failed, they may lose confidence and stop engaging. Teachers handling large classes cannot always provide individualized feedback or quickly identify the concepts that need reteaching.
-
-Aralytics aims to make useful diagnostic feedback available quickly and give teachers actionable evidence for follow-up, without replacing teacher judgment or exposing students to unnecessary data collection.
+Students learning to code often receive generic feedback that arrives too late to be actionable, leading to disengagement and a lack of motivation. Teachers, particularly in large classes, struggle to provide the personalized feedback each student needs, resulting in some learners being left behind without clear guidance on how to improve. This is especially critical in coding education, where understanding specific errors and concepts is essential for progress.
 
 ---
 
-## 3. Goals, Non-Goals, and Success Measures
+## 3. Goals and Objectives
 
-### 3.1 Business goals
+### 3.1. Business Goals
+- **B1:** Achieve adoption by private schools and individual teachers across the Philippines within the first two years.
+- **B2:** Establish a sustainable subscription-based revenue model targeting schools.
+- **B3:** Scale the platform globally after achieving nationwide success in the Philippines.
 
-- **B1:** Validate adoption with private schools and individual teachers in the Philippines.
-- **B2:** Establish a sustainable school-focused subscription model; pricing remains undecided.
-- **B3:** Consider global expansion only after the Philippine product and operating model are validated.
-
-### 3.2 Product goals
-
-- **G1:** Help students understand errors and improve through timely, personalized feedback.
-- **G2:** Reduce routine grading and feedback effort for teachers.
-- **G3:** Help teachers identify struggling students and class-wide misconception patterns.
-- **G4:** Support coding instruction in classes of different sizes while keeping teachers in control of intervention decisions.
-
-### 3.3 Non-goals for the initial release
-
-- General-purpose learning management system or classroom video platform.
-- Third-party single sign-on or classroom integrations.
-- Self-service public sign-up; accounts are provisioned by a school or Aralytics administrator.
-- A school-administrator application role or parent portal.
-- A pre-made quiz/content library. Teachers create and own the learning activities they assign.
-- AI mood, emotion, or confidence detection. This feature is explicitly removed from scope for privacy and ethical reasons.
-- Filipino/English interface switching in the current product direction. Initial interface and generated feedback are English-first.
+### 3.2. Product Goals
+- **G1:** Improve student engagement and motivation through personalized, timely feedback on coding activities.
+- **G2:** Reduce the time teachers spend on grading and providing feedback, allowing them to focus on high-impact interventions.
+- **G3:** Provide teachers with actionable diagnostic data to identify struggling students and track class-wide progress.
+- **G4:** Create a scalable solution that delivers personalized learning support for coding education, regardless of class size.
 
 ---
 
-## 4. Users and Personas
+## 4. Target Audience & Personas
 
-### 4.1 Student — Miguel, 16
+### 4.1. Primary Persona: The Student
+**Name:** Miguel, 16 years old
+**Pain Points:** Receives generic feedback, loses motivation when stuck, feels like a number in a large class.
+**Goals:** Understand mistakes in coding exercises, improve grades, feel supported.
 
-High-school student learning Python in a private school in Metro Manila. Miguel wants to know what went wrong, how to reason about a correction, and what to practice next. Generic “good job” or “try again” feedback does not give him enough direction.
+### 4.2. Secondary Persona: The Teacher
+**Name:** Mr. Reyes, 35 years old
+**Pain Points:** Overwhelmed by grading, wants to give individual attention but lacks time, struggles to identify struggling students quickly.
+**Goals:** See progress at a glance, provide effective feedback efficiently, use data to inform lesson planning.
 
-### 4.2 Teacher — Mr. Reyes, 35
-
-Computer Science / coding teacher in Quezon City. He needs to create activities, review class and individual results, identify students below a mastery threshold, and decide where personal intervention will help most.
-
-### 4.3 School administrator — Dr. Santos, 50
-
-Principal or academic lead evaluating learning outcomes, teacher workload, student privacy, and subscription value. The administrator is a buyer and account-provisioning stakeholder in the initial scope, not a separate in-product role.
+### 4.3. Tertiary Persona: The School Administrator
+**Name:** Dr. Santos, 50 years old
+**Pain Points:** Needs to demonstrate improved outcomes, wants to support teachers without increasing workload, seeks cost-effective solutions.
+**Goals:** Wants a platform that improves performance and engagement, backed by data.
 
 ---
 
-## 5. Product Scope and Current Project State
+## 5. System Architecture & Tech Stack
 
-### 5.1 Current frontend routes
+### 5.1. Backend Architecture (Implemented)
+- **Framework:** Java 21, Spring Boot 3.4.13
+- **Database:** MySQL 8 (Local XAMPP environment for development)
+- **ORM & Migrations:** Spring Data JPA (Hibernate) + Flyway
+- **Authentication:** Stateless JWT (JSON Web Tokens) + Spring Security + BCrypt
+- **API Documentation:** Springdoc OpenAPI (Swagger UI)
+- **AI Integration:** Adapter Pattern (`DiagnosticEngine`) with a deterministic `MockDiagnosticEngine` for MVP and a stub for future LLM integration.
 
-| Area | Route | Screen purpose |
-|---|---|---|
-| Public | `/` | Product landing page and pilot inquiry entry point |
-| Authentication | `/login` | Student/Teacher demo login |
-| Account activation | `/register` | Institution-code and issued-key activation flow UI |
-| Student | `/student/dashboard` | Student home, assigned work, streak/XP and learning overview |
-| Student | `/student/activities` | Assigned, remedial, upcoming, and completed activity views |
-| Student | `/student/quiz` | Live quiz / coding scenario and answer selection |
-| Student | `/student/feedback` | Diagnostic report and practice-drill UI |
-| Student | `/student/progress` | Feedback history and progress analytics UI |
-| Teacher | `/teacher/dashboard` | Class KPIs, mastery overview, and flagged students |
-| Teacher | `/teacher/students` | Student roster and mastery detail UI |
-| Teacher | `/teacher/activities` | Activity/quiz management and create-activity drawer |
-| Teacher | `/teacher/reports` | Cohort reports and learning analytics UI |
-| Teacher | `/teacher/settings` | Classroom, grading, and diagnostic tone settings UI |
+### 5.2. Frontend Architecture
+- **Framework:** React 19, Vite 8
+- **Styling:** Tailwind CSS v4
+- **State Management:** React Hooks (Local State + Context for Auth)
+- **API Client:** Native `fetch` (Wired to `http://localhost:8080/api`)
 
-### 5.2 Implementation status
-
-| Capability | Current state in this repository |
-|---|---|
-| Responsive public, student, and teacher screens | Implemented as a React 19 + Vite 8 + Tailwind CSS v4 frontend prototype |
-| Login | Demo-only client-side animation and role-based navigation; accepts non-empty credentials and does not authenticate a real account |
-| Account activation | Form and demo flow UI; issued-key verification and account creation are not backed by a service |
-| Activities, scores, dashboards, reports, and settings | Primarily sample data and client-side interactions; no durable storage or connected product API |
-| AI feedback | Sample diagnostic content and UI; no live locally hosted model or inference service is integrated |
-| Notifications and exports | UI/demo states only; delivery and production file generation are not implemented |
-
-The backend endpoint map in `NAVIGATION.md` is a plan, not a list of working services. Demo credentials and activation examples in `SETUP.md` are for local development only and must not be used as production credentials.
+### 5.3. Database Schema (15 Tables)
+The database accurately reflects the ERD: `SCHOOL`, `USER`, `SUBSCRIPTION`, `CLASS`, `ENROLLMENT`, `QUIZ`, `QUESTION`, `SUBMISSION`, `ANSWER`, `FEEDBACK`, `CONCEPT`, `FEEDBACK_CONCEPT`, `PROGRESS_RECORD`, `NOTIFICATION`, and the additive `QUESTION_CONCEPT` (for tagging concepts to specific questions).
 
 ---
 
 ## 6. Functional Requirements
 
-Priorities below describe the intended product. The **current state** notes separately indicate prototype coverage.
+### 6.1. Must-Have (MVP) - **STATUS: IMPLEMENTED (Backend)**
 
-### 6.1 Authentication and account management — MVP
+#### 6.1.1. User Authentication & Account Management
+- **Fixed System Access:** No public self-registration. Accounts are provisioned via Institution Code (`STJUDE-MNL-2025`) and issued Access Keys (`KEY-8821-PY` / `FAC-2025-DEPED`).
+- **Role-Based Access Control (RBAC):** Students can only see their own data. Teachers can only see data for their assigned classes.
+- **JWT Sessions:** Secure, stateless login returning a Bearer token.
 
-- **FR-AUTH-01:** Students and teachers shall sign in with credentials issued by their school or an Aralytics administrator.
-- **FR-AUTH-02:** The system shall enforce role-based access: students can access only their own records; teachers can access only their assigned classes and students.
-- **FR-AUTH-03:** Account activation may use an institution code and individual access key. It shall not permit unrestricted self-registration.
-- **FR-AUTH-04:** Authentication shall use secure server-side sessions or an equivalent approved mechanism, with credential reset and account deactivation procedures defined before launch.
-- **Acceptance:** Invalid, expired, or already-used credentials are rejected without exposing whether another user's account exists. Successful sign-in routes users to the correct role home.
-- **Current state:** `/login` and `/register` demonstrate the flows only; there is no authentication service, authorization boundary, or persistent session.
+#### 6.1.2. Student Dashboard & Quiz Engine
+- Students can view assigned and completed activities.
+- Students can take quizzes (Multiple Choice and Situational/Code-Scenario questions).
+- **Deterministic Scoring:** Scores are calculated server-side by comparing submitted answers to the `correctAnswer` in the database (no AI guessing).
+- **Idempotency:** A student cannot submit the same quiz twice (returns 409 Conflict).
 
-### 6.2 Student portal — MVP
+#### 6.1.3. AI Diagnostic & Feedback Engine (Mock)
+- Upon submission, the `MockDiagnosticEngine` parses the questions' associated `CONCEPT` tags.
+- It generates a supportive, 2-to-4 sentence English response that identifies strengths and areas for practice without leaking the correct answer.
+- **Fallback State:** If feedback generation fails, the system returns a `202 Accepted` with a `PENDING` status, allowing the student to retry.
 
-- **FR-STU-01:** Show assigned activities with status, due date, class/topic, and an action to start or continue.
-- **FR-STU-02:** Show completed activities with score and a link to the associated feedback.
-- **FR-STU-03:** Let a student review their own activity details and submitted answers.
-- **FR-STU-04:** Present clear empty, loading, and error states when assignments or results cannot be loaded.
-- **Current state:** Dashboard and activity screens display representative sample content and client-side navigation.
+#### 6.1.4. Teacher Dashboard & Roster
+- Teachers can view class-wide KPIs (Average score, completion rate).
+- Teachers can see a roster of students and identify those falling below the **70% intervention threshold**.
+- Teachers can drill down into an individual student's diagnostic feedback.
 
-### 6.3 Quiz and activity engine — MVP
+---
 
-- **FR-ACT-01:** Teachers shall be able to create and edit quizzes/activities using multiple-choice questions and situational or code-scenario multiple-choice questions.
-- **FR-ACT-02:** Teachers shall set a title, topic/concept, due date, and target class or individual student before publishing an activity.
-- **FR-ACT-03:** Teachers are responsible for authoring the content. The initial product shall not depend on a bundled pre-made content library.
-- **FR-ACT-04:** Students shall be able to open an assigned activity, select answers, move between questions, review completion, and submit.
-- **FR-ACT-05:** The system shall retain the submitted answer set and submission time for scoring and feedback.
-- **Acceptance:** A published activity appears only for its assigned students; a submitted attempt cannot silently lose answers or be counted twice.
-- **Current state:** Teacher activity-management and student quiz screens exist. Creation, assignment, and submission are prototype interactions using local state/sample content; no persistence or cross-user synchronization exists.
+### 6.2. Should-Have (The Remaining 60%) - **STATUS: TO BE IMPLEMENTED**
 
-### 6.4 AI diagnostic and feedback — MVP
+#### 6.2.1. Reporting & Exports (FR-RPT)
+- Teachers must be able to generate and download a CSV export of the class roster and scores.
+- Teachers must be able to download a PDF report of cohort analytics.
+- **Endpoints to build:** `GET /api/teacher/reports/export-csv`, `GET /api/teacher/reports/export-pdf`.
 
-- **FR-AI-01:** After submission, the service shall evaluate answers against teacher-defined correct answers and concept tags using a locally hosted, coding-education diagnostic model.
-- **FR-AI-02:** Return a score, concepts demonstrated, concepts needing practice, and a concise explanation tailored to the student's answers.
-- **FR-AI-03:** Feedback shall be supportive, age-appropriate, understandable in English, and focused on a useful next step. By default, it should guide reasoning rather than provide a complete answer/code solution.
-- **FR-AI-04:** Feedback shall be available within five seconds of submission under the agreed pilot load; if generation fails or times out, show a clear retry/fallback state and preserve the submission.
-- **FR-AI-05:** Teachers shall be able to view the diagnostic delivered to a student in their class.
-- **Safety:** Do not infer mood, emotion, or confidence. Do not use student work to train or improve models without an approved, disclosed, privacy-compliant process.
-- **Current state:** Diagnostic reports and settings previews show sample content only. No model, model-serving endpoint, evaluation pipeline, or feedback persistence is connected.
+#### 6.2.2. Persistent Settings (FR-SET)
+- Teachers must be able to adjust the intervention threshold (e.g., from 70% to 75%).
+- Teachers must be able to set their preferred feedback tone (e.g., Formal English vs. Conversational).
+- **Requirement:** Create a `TEACHER_SETTINGS` table to persist these preferences.
 
-### 6.5 Teacher dashboard and roster — MVP
+#### 6.2.3. Notifications & Reminders (FR-NOT)
+- The system must send in-app notifications for upcoming due dates and completion milestones.
+- **Requirement:** Build the notification delivery service (currently the `NOTIFICATION` table exists but is empty).
 
-- **FR-TCH-01:** Show class-level activity participation and performance, including average score and concept-level results.
-- **FR-TCH-02:** Identify students below a configurable intervention threshold; the default target threshold is 70% unless the teacher changes it.
-- **FR-TCH-03:** Let a teacher open an individual student's permitted scores, progress, and AI feedback.
-- **FR-TCH-04:** Provide filters for class, activity/topic, and mastery/intervention status where applicable.
-- **FR-TCH-05:** Present data with dates and class context so teachers can distinguish current results from historical trends.
-- **Current state:** Dashboard and roster screens render representative class data and offer prototype interactions; server-backed queries, permissions, and real-time updates are not implemented.
+#### 6.2.4. Student Feedback History & Practice Drills (FR-PROG)
+- Students must have a searchable history of all past feedback.
+- Students must be able to generate a "Practice Drill" (3 similar questions) based on their weak concepts.
+- **Endpoints to build:** `GET /api/student/progress/history`, `POST /api/student/feedback/{submissionId}/practice-drill`.
 
-### 6.6 Progress, history, and reports — post-MVP data capability
-
-- **FR-PROG-01:** Maintain a student's feedback history and show progress over time by activity and coding concept.
-- **FR-PROG-02:** Give teachers class and individual trend views suitable for planning reteaching and intervention.
-- **FR-PROG-03:** Reports shall state the reporting period, cohort, and calculation definitions.
-- **Current state:** `/student/progress` and `/teacher/reports` prototype these views. Persisted history, verified analytics, and production CSV/PDF exports remain future implementation work.
-
-### 6.7 Notifications — post-MVP
-
-- **FR-NOT-01:** Provide in-app reminders for upcoming due dates and confirmation/encouragement after completion.
-- **FR-NOT-02:** Email reminders may be added after consent, delivery, and school configuration requirements are defined.
-- **Current state:** Notification indicators and reminder examples are visual/demo UI only; nothing is sent.
-
-### 6.8 Teacher and classroom settings
-
-- Teachers need to manage their profile, assigned cohorts, grading weights, intervention threshold, and diagnostic feedback tone where permitted by school policy.
-- Settings changes must be saved, auditable where they affect grading or student treatment, and clearly report save failures.
-- **Current state:** `/teacher/settings` displays these controls, but values are not persisted to a service. The production authority model for these settings remains to be defined.
+#### 6.2.5. Real AI Integration (FR-AI)
+- Replace the `MockDiagnosticEngine` with the `LlmDiagnosticEngine`.
+- **Requirement:** Connect to a locally hosted model (e.g., Ollama, Llama 3) to generate the diagnostic feedback dynamically.
 
 ---
 
 ## 7. Non-Functional Requirements
 
-### 7.1 Performance
+### 7.1. Performance
+- AI feedback must be generated and displayed within **5 seconds** of submission. *(Currently met by Mock Engine; must be load-tested with the real LLM).*
+- Dashboards must load within **3 seconds**.
 
-- Student and teacher dashboards should load within three seconds under the agreed pilot network and data volume.
-- AI feedback target: within five seconds after submission.
-- Measure performance on representative school devices and connections; current frontend build results do not establish production response times.
+### 7.2. Security & Privacy
+- **Compliance:** Must comply with the Data Privacy Act of 2012 (RA 10173).
+- **Passwords:** Hashed using BCrypt.
+- **Tokens:** JWT secrets must be at least 32 bytes and stored in environment variables.
+- **Data Exposure:** No mood/emotion detection. AI feedback must never leak the correct answer.
 
-### 7.2 Scalability
-
-- Architecture target: at least 10,000 concurrent students and 1,000 teachers without unacceptable degradation.
-- Use horizontal scaling for stateless application services where appropriate; validate with load tests before claiming this target.
-- Current prototype has not been load-tested and does not include a backend architecture.
-
-### 7.3 Security and privacy
-
-- Encrypt student records and credentials in transit and at rest.
-- Enforce server-side role and class authorization for every student-data request; hiding a UI control is not authorization.
-- Comply with the Philippine Data Privacy Act of 2012 (RA 10173), including appropriate notice, purpose limitation, access controls, retention/deletion rules, and incident handling.
-- Define school/teacher authority, guardian or student notices, data retention periods, and model-processing arrangements before pilot data is collected.
-- Do not collect biometric, emotional, or inferred-confidence data.
-- The current frontend prototype is not suitable for real student personal data.
-
-### 7.4 Usability and accessibility
-
-- Support current desktop and mobile browsers with responsive layouts.
-- Keep student feedback encouraging and actionable; keep teacher analytics scannable and tied to clear intervention decisions.
-- Support keyboard navigation, visible focus, readable contrast, labels, and reduced-motion preferences.
-- Validate accessibility and usability with students and teachers before pilot launch.
-
-### 7.5 Localization
-
-- Initial product interface and model feedback language: English.
-- No EN/FIL switcher is present in the current product direction. Any future Filipino localization requires a separate product decision and quality validation.
+### 7.3. Scalability
+- The architecture must support horizontal scaling. The JWT denylist (currently in-memory) must be migrated to Redis for multi-instance deployments.
 
 ---
 
-## 8. Success Metrics
+## 8. User Stories (Updated)
 
-### Student engagement
+### 8.1. Student User Stories
+- **US-01 (Done):** As a student, I want to log in with my credentials so I can access my assigned coding activities.
+- **US-03 (Done):** As a student, I want to see a list of my pending coding activities so I know what to work on next.
+- **US-06 (Done):** As a student, after I submit my quiz, I want to receive feedback that tells me exactly which concepts I got wrong.
+- **US-09 (Pending):** As a student, I want to receive a reminder the day before an activity is due.
+- **US-11 (Pending):** As a student, I want to review the feedback I received on past quizzes.
 
-- Weekly active students who complete at least one activity.
-- Activity completion rate and median time to completion.
-- Student-reported helpfulness of feedback.
-
-### Student learning
-
-- Change in assessment performance over a term.
-- Change in mastery by concept (for example, loops, conditionals, and functions).
-- Change in the number of students below the agreed passing/intervention threshold.
-
-### Teacher efficiency and adoption
-
-- Weekly active teachers and number of activities created/assigned.
-- Teacher-reported time spent grading and preparing interventions before and during the pilot.
-- Teacher-reported usefulness of class and student diagnostics.
-
-### Business
-
-- Pilot school adoption, conversion/renewal, monthly and annual recurring revenue, and churn once pricing is approved.
-
-Metric definitions, baselines, collection methods, and targets must be agreed before a pilot. The prototype currently does not collect product analytics or satisfaction surveys.
+### 8.2. Teacher User Stories
+- **US-02 (Done):** As a teacher, I want to log in with my credentials so I can manage my classes.
+- **US-04 (Done):** As a teacher, I want to create a multiple-choice quiz and assign it to my class.
+- **US-07 (Done):** As a teacher, I want to see a list of students who scored below 70% so I can schedule a remedial session.
+- **US-10 (Pending):** As a teacher, I want to see a graph showing the average class score over the semester.
 
 ---
 
-## 9. Assumptions and Dependencies
+## 9. Risks & Mitigations
 
-- Schools and teachers will provide structured quiz content and concept tags.
-- Students will engage more when feedback is specific, timely, and supportive.
-- A locally hosted model can produce sufficiently accurate, pedagogically sound diagnostics within the performance and cost targets.
-- Pilot schools will provide representative activities, consent/notice review, and teacher feedback.
-- **Dependencies:** model development and evaluation; backend, database, and secure authentication; teacher content workflow; school partnerships; privacy/legal review; hosting and operations.
-
----
-
-## 10. Risks and Mitigations
-
-| Risk | Impact | Mitigation |
-|---|---|---|
-| Teachers do not create enough activities | High | Simplify authoring, provide workflow guidance, and measure creation friction; do not assume a content library in MVP. |
-| AI feedback is inaccurate or discouraging | High | Evaluate against educator-reviewed examples, show actionable explanations, allow teacher review/flagging, and provide a safe fallback. |
-| Student data is exposed to an unauthorized user | High | Server-side authorization, encryption, auditability, privacy review, and security testing before real data is used. |
-| Local model hosting is too costly or slow | Medium/High | Benchmark candidate models and realistic class loads before finalizing architecture or service-level claims. |
-| Schools adopt slowly | High | Pilot with a small set of schools, validate outcomes, and resolve pricing/onboarding questions before launch. |
-| Prototype UI is mistaken for a working service | High | Label demo flows clearly and do not collect real student data until backend safeguards are implemented. |
+| Risk | Impact | Mitigation Strategy |
+|------|--------|---------------------|
+| **Real AI is too slow (>5s)** | High | Keep the `MockDiagnosticEngine` as a fallback. Use streaming responses if possible. |
+| **XAMPP/MySQL conflicts** | Medium | The backend supports environment variables (`DB_URL`, `DB_USER`) for easy switching to a production database. |
+| **Frontend/Backend desync** | Medium | Maintain strict adherence to the OpenAPI spec. Swagger UI is enabled in dev for contract testing. |
 
 ---
 
-## 11. Roadmap
+## 10. Roadmap (Updated)
 
-| Phase | Focus | Exit criteria |
-|---|---|---|
-| Current | Frontend prototype | 13 public, student, and teacher routes provide a responsive demonstration of intended workflows. This is not the MVP service. |
-| MVP foundation | Backend, identity, and data model | Provisioned accounts, role/class authorization, persistent classes, activities, attempts, and audit/security review. |
-| MVP learning loop | Author, assign, submit, diagnose | Teacher-created MCQ/scenario activities; student submission; evaluated AI feedback within target; teacher sees permitted results. |
-| Pilot | Validate with 2–3 schools | Privacy-approved pilot, load and model-quality evaluation, teacher/student feedback, success metrics baselined. |
-| Post-MVP | Notifications and durable analytics/history | In-app reminders, verified progress trends, feedback history, and reliable report exports. |
-| Later | Expansion | Revisit gamification, localization, new question types, and global expansion based on pilot evidence. |
-
-Timelines are intentionally not assigned until team capacity, model hosting, and pilot commitments are confirmed.
+| Phase | Timeline | Key Deliverables | Status |
+|-------|----------|------------------|--------|
+| **Phase 1: MVP Core** | Months 1-4 | Auth, Quiz Engine, Mock AI, Teacher Dashboard. | ✅ **DONE** |
+| **Phase 2: Frontend Integration** | Month 4 | Wire React frontend to Spring Boot API. | 🟡 **IN PROGRESS** |
+| **Phase 3: Post-MVP Features** | Months 5-6 | Notifications, Settings, CSV/PDF Exports, Feedback History. | ⏳ *Planned* |
+| **Phase 4: Real AI & Pilot** | Months 7-8 | Integrate local LLM, onboard 2-3 pilot schools. | ⏳ *Planned* |
+| **Phase 5: Scale & Expand** | Months 9+ | Gamification, multi-language, global expansion. | ⏳ *Planned* |
 
 ---
 
-## 12. Open Questions
+## 11. Open Questions (Updated)
 
-1. Which local model, serving stack, evaluation dataset, and human review process will be used?
-2. Who provisions, resets, and deactivates accounts, and what is the exact invitation-key lifecycle?
-3. What subscription model and pilot pricing will schools evaluate?
-4. Which classes and teachers will participate in the first pilot, and what data/consent process will they use?
-5. Which settings are teacher-controlled versus school-controlled, and who can change grading thresholds or weights?
-6. What are the required retention/deletion periods and process for student records and model inputs?
-7. Which reporting/export formats are required for the first pilot?
-8. When, if ever, should Filipino language support or an administrator application role enter scope?
-
----
-
-**Document end**
+1. **LLM Hosting:** Will the local AI model be hosted via a Python microservice, or will we use a Java-native ONNX runtime?
+2. **Frontend Auth:** Where should the JWT be stored on the frontend? (Currently using `localStorage`, but should we move to HTTP-only cookies for XSS protection in production?)
+3. **Reports:** Should CSV exports happen on the server (Java) or the client (React)?

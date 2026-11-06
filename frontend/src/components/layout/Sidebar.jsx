@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { Link } from 'react-router-dom'
 import BrandLogo from '../BrandLogo'
+import { getStoredUser, logout } from '../../api/client'
 
 const NAV_ITEMS = [
   { path: '/teacher/dashboard', icon: 'dashboard', label: 'Dashboard' },
@@ -14,6 +15,14 @@ const PROFILE_URL =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuChrfifem-pX-5-2ww20HzrO-M3nr7zLtmPi9Ix5-PCHl7pi5uQZlXPj6xHOAyG6JWBzxOozhXH5fuP6gRofSlFOKpUzMOpRg73l4PI5TaIX7ObErToVfnbzhJy2ghX0wDrjK6Lj3QfAiVzzaEcBSb7jWbHlaU0lIU4nC-1cCexq0ACsLAItVy1LwoUNeA06eShYWT0UaFkkl2Fbh-zjihrqjqhdUFLP2Zuz78Kyv-Wx6wEB5ZpfYTQrQ'
 
 export default function Sidebar({ open = false, onClose }) {
+  const user = getStoredUser()
+
+  const handleLogout = async (event) => {
+    event.preventDefault()
+    await logout()
+    window.location.assign('/login')
+  }
+
   return (
     <aside
       className={`${
@@ -54,7 +63,7 @@ export default function Sidebar({ open = false, onClose }) {
           />
           <div className="flex flex-col min-w-0">
             <span className="font-label-md text-label-md text-on-surface truncate">
-              Mr. Reyes
+              {user?.fullName || 'Teacher'}
             </span>
             <span className="font-body-sm text-body-sm text-on-surface-variant truncate">
               High School CS
@@ -63,7 +72,8 @@ export default function Sidebar({ open = false, onClose }) {
         </div>
         <Link
           className="text-on-surface-variant hover:text-primary transition-colors p-space-xs"
-          title="Switch role or logout"
+          onClick={handleLogout}
+          title="Sign out"
           to="/login"
         >
           <span className="material-symbols-outlined text-[20px]">swap_horiz</span>

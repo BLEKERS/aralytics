@@ -4,7 +4,7 @@ AI-powered diagnostic feedback and mastery analytics for Python / CS classrooms 
 
 ## Summary
 
-Aralytics is an AI-supported coding education platform that gives students personalized diagnostic feedback on quizzes and coding scenarios, and gives teachers class dashboards, mastery rosters, and learning analytics. The repository currently contains a **responsive frontend prototype only**: 13 routed screens built with React 19 + Vite 8 + Tailwind CSS v4. Login, account activation, data, reports, and AI feedback are demo UI with sample client-side data; a backend, real authentication, durable storage, and a live AI model are planned but not yet connected. See [PRD.md](./PRD.md) for the intended product versus current state.
+Aralytics is an AI-supported coding education platform that gives students personalized diagnostic feedback on quizzes and coding scenarios, and gives teachers class dashboards, mastery rosters, and learning analytics. The repository contains a **React frontend prototype** (13 routed screens with React 19 + Vite 8 + Tailwind CSS v4) and a **Spring Boot backend at its 40% milestone**: fixed-key account activation, stateless JWT auth, teacher activity authoring, the student quiz lifecycle, diagnostic feedback, and student/teacher dashboards backed by MySQL. The frontend is not yet wired to the API and still uses sample client-side data for most screens; reports, notifications, practice drills, settings persistence, and a live AI model remain deferred. See [PRD.md](./PRD.md) for the intended product versus current state and [backend/README.md](./backend/README.md) for the implemented API surface.
 
 ## Problem
 
@@ -55,14 +55,21 @@ Students learning to code often receive feedback that is generic or arrives too 
 | Build tool | `vite@^8` | Dev server at `http://localhost:3000` |
 | Styling | `tailwindcss@^4` + `@tailwindcss/vite` | Tokens configured via `@theme` in `frontend/src/index.css` |
 | Linter | `oxlint` | `npm run lint` inside `frontend/` |
+| Backend | Spring Boot `3.4.13`, Java `21` | `backend/`; Maven wrapper, Spring Web/JPA/Security/Validation/Actuator |
+| Database | MySQL `8`, Flyway `10` | ERD schema in `backend/src/main/resources/db/migration`; dev-only seed |
+| Auth | Spring Security + JJWT `0.12.7` | Stateless HS256 JWT, BCrypt, fixed-key activation (no public signup) |
+| API docs | springdoc `2.8.17` | Swagger UI only under the `dev` profile |
+| Backend tests | JUnit 5, MockMvc, Testcontainers | `./mvnw verify` in `backend/`; MySQL migration IT is Docker-gated |
 
-Backend, database, authentication, and AI services: planned (see `PRD.md` and `NAVIGATION.md`).
+A live AI model is not connected yet: the diagnostic engine is deterministic for this milestone,
+with an adapter stub that falls back to it. See [backend/README.md](./backend/README.md).
 
 ## Documentation
 
 | Document | Description |
 |---|---|
 | [SETUP.md](./SETUP.md) | Quick-start, available commands, and demo credentials |
+| [backend/README.md](./backend/README.md) | Backend setup, environment variables, API map, design decisions, and tests |
 | [PRD.md](./PRD.md) | Product requirements; prototype vs. production scope |
 | [docs/architecture.md](./docs/architecture.md) | Architecture notes (planned backend and AI service) |
 | [docs/requirements.md](./docs/requirements.md) | Functional / non-functional requirements breakdown |
@@ -91,6 +98,29 @@ npm run build   # production bundle into frontend/dist/
 ```
 
 Demo mode sign-in accepts any non-empty credentials and routes to the Student or Teacher view based on the selected role tab. Demo credentials and activation examples are for local development only — do not use them in production. See [SETUP.md](./SETUP.md).
+
+### Backend (40% milestone)
+
+Requires JDK 21+ and MySQL 8 (or Docker). The API runs at `http://localhost:8080`.
+
+```powershell
+cd backend
+docker compose up --build      # MySQL + API with the dev seed and Swagger UI
+```
+
+Or run against a local MySQL with the Maven wrapper:
+
+```powershell
+cd backend
+$env:JAVA_HOME="C:\Program Files\Java\jdk-21"
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"
+.\mvnw.cmd -B verify           # unit + integration tests
+```
+
+Configuration is environment-driven; copy `backend/.env.example` to `backend/.env`. Swagger is
+available at `/swagger-ui.html` and health at `/actuator/health` under the dev profile. Demo
+credentials, API routes, the security model, and the 501 (deferred) endpoint list are documented
+in [backend/README.md](./backend/README.md).
 
 ## Branching & Workflow
 

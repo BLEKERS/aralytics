@@ -1,0 +1,18 @@
+# Production profile: no seed data, no API documentation UI, conservative logging.
+# Supply JWT_SECRET, DB_*, and activation keys through the environment.
+spring:
+  flyway:
+    locations: classpath:db/migration
+  jpa:
+    show-sql: false
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+logging:
+  level:
+    root: INFO
+    ph.aralytics.backend: INFO

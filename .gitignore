@@ -32,3 +32,5 @@ dist-ssr
 *.sw?
 
 opencode.json
+*.txt
+backend.pdf

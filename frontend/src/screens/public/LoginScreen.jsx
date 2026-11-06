@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import BrandLogo from '../../components/BrandLogo';
+import { api, saveSession } from '../../api/client';
+import { describeApiError } from '../../components/DataState';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -22,39 +24,44 @@ export default function LoginScreen() {
   const [password, setPassword] = useState(DEFAULT_CREDENTIALS.student.password);
   const [showPassword, setShowPassword] = useState(false);
   const [authState, setAuthState] = useState('idle');
-  const timersRef = useRef([]);
+  const [error, setError] = useState(null);
 
   const handleRoleChange = (nextRole) => {
     setRole(nextRole);
     setIdentifier(DEFAULT_CREDENTIALS[nextRole].identifier);
     setPassword(DEFAULT_CREDENTIALS[nextRole].password);
+    setError(null);
   };
 
-  useEffect(() => {
-    const timers = timersRef.current;
-    return () => {
-      timers.forEach(clearTimeout);
-    };
-  }, []);
-
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     if (authState !== 'idle') return;
-    timersRef.current.forEach(clearTimeout);
-    timersRef.current = [];
     setAuthState('authenticating');
+    setError(null);
 
-    const t1 = setTimeout(() => {
+    try {
+      const auth = await api.auth.login({
+        identifier: identifier.trim(),
+        password,
+      });
+      saveSession(auth);
       setAuthState('authenticated');
-      const t2 = setTimeout(() => {
-        navigate(role === 'student' ? '/student/dashboard' : '/teacher/dashboard');
-      }, 600);
-      timersRef.current.push(t2);
-    }, 900);
-    timersRef.current.push(t1);
+      // Trust the role returned by the backend, not the selected tab.
+      navigate(auth.user?.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard', {
+        replace: true,
+      });
+    } catch (err) {
+      setError(err);
+      setAuthState('idle');
+    }
   };
 
   const isStudent = role === 'student';
+  const errorInfo = describeApiError(error);
+  const loginErrorMessage =
+    error?.status === 401
+      ? 'Incorrect email, ID, or password. Check your credentials and try again.'
+      : errorInfo?.message;
 
   return (
     <div className="bg-surface font-body-md text-on-surface min-h-screen flex flex-col justify-between antialiased selection:bg-primary-fixed selection:text-on-primary-fixed overflow-x-hidden">
@@ -125,6 +132,42 @@ export default function LoginScreen() {
                   <span className="">Teacher / Educator</span>
                 </button>
               </div>
+              {/* API error / offline banner */}
+              {error && (
+                <div
+                  className={`rounded-2xl border p-space-md flex items-start gap-3 ${
+                    errorInfo?.tone === 'warning'
+                      ? 'bg-tertiary-fixed/40 border-tertiary/20'
+                      : 'bg-error-container/50 border-error/20'
+                  }`}
+                  role="alert"
+                >
+                  <span
+                    className={`material-symbols-outlined text-[22px] shrink-0 ${
+                      errorInfo?.tone === 'warning' ? 'text-tertiary' : 'text-error'
+                    }`}
+                  >
+                    {errorInfo?.icon || 'error'}
+                  </span>
+                  <div className="min-w-0">
+                    <p
+                      className={`font-label-lg text-[15px] font-bold ${
+                        errorInfo?.tone === 'warning' ? 'text-tertiary' : 'text-error'
+                      }`}
+                    >
+                      {error?.status === 401 ? 'Sign-in failed' : errorInfo?.title}
+                    </p>
+                    <p className="font-body-sm text-[13px] text-on-surface-variant leading-relaxed">
+                      {loginErrorMessage}
+                    </p>
+                    {error?.isOffline && (
+                      <p className="font-body-sm text-[12px] text-outline mt-1">
+                        Run the backend on port 8080 or set VITE_API_BASE_URL, then retry.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
               {/* Login Form */}
               <form className="flex flex-col gap-space-md" id="login-form" onSubmit={handleLogin}>
                 {/* Identifier Field */}
