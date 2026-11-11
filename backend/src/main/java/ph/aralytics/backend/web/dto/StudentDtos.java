@@ -127,6 +127,35 @@ public final class StudentDtos {
             List<CommonDtos.ConceptMastery> concepts) {
     }
 
+    public record FeedbackHistoryItem(
+            Long submissionId,
+            Long quizId,
+            String quizTitle,
+            BigDecimal score,
+            OffsetDateTime submittedAt,
+            String feedbackStatus,
+            List<CommonDtos.ConceptMastery> concepts) {
+    }
+
+    public record FeedbackHistoryResponse(
+            List<FeedbackHistoryItem> items,
+            List<CommonDtos.ConceptMastery> concepts) {
+    }
+
+    public record PracticeDrillQuestion(
+            Long id,
+            String text,
+            List<OptionView> options,
+            int points,
+            List<String> concepts) {
+    }
+
+    public record PracticeDrillResponse(
+            Long submissionId,
+            List<String> concepts,
+            List<PracticeDrillQuestion> questions) {
+    }
+
     public record QuestionOptionRequest(
             @NotBlank(message = "Option key is required") @Size(max = 16) String key,
             @NotBlank(message = "Option text is required") String text) {

@@ -52,12 +52,14 @@ public class QuizService {
     private final FeedbackRepository feedbackRepository;
     private final QuizDraftStore draftStore;
     private final AralyticsProperties properties;
+    private final NotificationService notificationService;
 
     public QuizService(QuizRepository quizRepository, ClassRepository classRepository,
             UserRepository userRepository, ConceptRepository conceptRepository,
             EnrollmentRepository enrollmentRepository, SubmissionRepository submissionRepository,
             ProgressRecordRepository progressRecordRepository, FeedbackRepository feedbackRepository,
-            QuizDraftStore draftStore, AralyticsProperties properties) {
+            QuizDraftStore draftStore, AralyticsProperties properties,
+            NotificationService notificationService) {
         this.quizRepository = quizRepository;
         this.classRepository = classRepository;
         this.userRepository = userRepository;
@@ -68,6 +70,7 @@ public class QuizService {
         this.feedbackRepository = feedbackRepository;
         this.draftStore = draftStore;
         this.properties = properties;
+        this.notificationService = notificationService;
     }
 
     // ---------------------------------------------------------------- teacher
@@ -144,6 +147,7 @@ public class QuizService {
         }
         quiz.setStatus(QuizStatus.PUBLISHED);
         quizRepository.save(quiz);
+        notificationService.assignmentPublished(quiz);
         return new TeacherDtos.PublishResponse(quiz.getId(), quiz.getStatus().name(), quiz.getDueDate());
     }
 
@@ -233,7 +237,7 @@ public class QuizService {
                 questions);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public StudentDtos.SaveAnswerResponse saveAnswer(Long studentId, Long quizId, Long questionId, String selectedOption) {
         Quiz quiz = loadAccessiblePublishedQuiz(studentId, quizId);
         if (submissionRepository.existsByStudentIdAndQuizId(studentId, quizId)) {

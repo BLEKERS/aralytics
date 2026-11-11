@@ -1,25 +1,24 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import BrandLogo from '../../components/BrandLogo';
+import { api, saveSession } from '../../api/client';
+import { describeApiError } from '../../components/DataState';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
 export default function AccountActivationScreen() {
   const navigate = useNavigate();
   const [role, setRole] = useState('student');
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [institutionCode, setInstitutionCode] = useState('');
+  const [accessKey, setAccessKey] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [status, setStatus] = useState('idle');
-  const timersRef = useRef([]);
-
-  useEffect(() => {
-    const timers = timersRef.current;
-    return () => {
-      timers.forEach(clearTimeout);
-    };
-  }, []);
+  const [error, setError] = useState(null);
 
   const hasLength = password.length >= 8;
   const hasNumber = /\d/.test(password);
@@ -63,24 +62,46 @@ export default function AccountActivationScreen() {
     strengthLabelClass = 'font-label-sm text-label-sm text-secondary font-medium';
   }
 
-  const handleActivation = (e) => {
+  const handleActivation = async (e) => {
     e.preventDefault();
     if (status !== 'idle') return;
-    timersRef.current.forEach(clearTimeout);
-    timersRef.current = [];
-    setStatus('validating');
+    setError(null);
 
-    const t1 = setTimeout(() => {
+    if (!passwordsMatch) {
+      setError(new Error('Passwords do not match. Re-enter both passwords.'));
+      return;
+    }
+
+    setStatus('validating');
+    try {
+      const verified = await api.auth.verifyKey({
+        institutionCode: institutionCode.trim(),
+        accessKey: accessKey.trim(),
+        role: role === 'student' ? 'STUDENT' : 'TEACHER',
+      });
+      const auth = await api.auth.activate({
+        activationToken: verified.activationToken,
+        fullName: fullName.trim(),
+        email: email.trim(),
+        password,
+      });
+      saveSession(auth);
       setStatus('verified');
-      const t2 = setTimeout(() => {
-        navigate(role === 'student' ? '/student/dashboard' : '/teacher/dashboard');
-      }, 700);
-      timersRef.current.push(t2);
-    }, 900);
-    timersRef.current.push(t1);
+      navigate(auth.user?.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard', {
+        replace: true,
+      });
+    } catch (err) {
+      setError(err);
+      setStatus('idle');
+    }
   };
 
   const isStudent = role === 'student';
+
+  const handleRoleChange = (nextRole) => {
+    setRole(nextRole);
+    setError(null);
+  };
 
   return (
     <div className="bg-surface font-body-md text-on-surface min-h-screen flex flex-col justify-between antialiased selection:bg-primary-fixed selection:text-on-primary-fixed overflow-x-hidden">
@@ -133,7 +154,7 @@ export default function AccountActivationScreen() {
                         : 'flex-1 py-2.5 px-3 rounded-lg font-label-lg text-[16px] font-medium transition-all flex items-center justify-center gap-1.5 text-on-surface-variant hover:text-on-surface'
                     }
                     id="role-student"
-                    onClick={() => setRole('student')}
+                    onClick={() => handleRoleChange('student')}
                     type="button"
                   >
                     <span className="material-symbols-outlined text-[20px]">school</span>
@@ -146,7 +167,7 @@ export default function AccountActivationScreen() {
                         : 'flex-1 py-2.5 px-3 rounded-lg font-label-lg text-[16px] font-medium transition-all flex items-center justify-center gap-1.5 text-on-surface-variant hover:text-on-surface'
                     }
                     id="role-educator"
-                    onClick={() => setRole('educator')}
+                    onClick={() => handleRoleChange('educator')}
                     type="button"
                   >
                     <span className="material-symbols-outlined text-[20px]">co_present</span>
@@ -156,6 +177,48 @@ export default function AccountActivationScreen() {
               </div>
               {/* Activation Form */}
               <form className="space-y-space-md" id="activation-form" onSubmit={handleActivation}>
+                {error && (
+                  <div className="flex items-start gap-space-xs rounded-xl bg-error-container px-space-sm py-3 text-on-error-container" role="alert">
+                    <span className="material-symbols-outlined text-[20px]">error</span>
+                    <span className="font-body-md text-body-md">{describeApiError(error)}</span>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm sm:gap-space-md">
+                  <div>
+                    <label className="block font-label-lg text-body-lg font-semibold text-on-surface mb-1.5" htmlFor="full-name">
+                      Full Name
+                    </label>
+                    <div className="relative flex items-center">
+                      <span className="material-symbols-outlined absolute left-3.5 text-outline text-[22px] pointer-events-none">badge</span>
+                      <input
+                        className="w-full pl-11 pr-4 py-3.5 bg-surface-container-lowest text-on-surface font-body-md text-body-lg rounded-xl shadow-[0_1px_4px_rgba(91,75,219,0.04)] placeholder:text-outline-variant focus:outline-none focus:shadow-[0_0_0_3px_#e4dfff] transition-all"
+                        id="full-name"
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="Juan Dela Cruz"
+                        required
+                        type="text"
+                        value={fullName}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block font-label-lg text-body-lg font-semibold text-on-surface mb-1.5" htmlFor="email">
+                      Email Address
+                    </label>
+                    <div className="relative flex items-center">
+                      <span className="material-symbols-outlined absolute left-3.5 text-outline text-[22px] pointer-events-none">mail</span>
+                      <input
+                        className="w-full pl-11 pr-4 py-3.5 bg-surface-container-lowest text-on-surface font-body-md text-body-lg rounded-xl shadow-[0_1px_4px_rgba(91,75,219,0.04)] placeholder:text-outline-variant focus:outline-none focus:shadow-[0_0_0_3px_#e4dfff] transition-all"
+                        id="email"
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@school.edu.ph"
+                        required
+                        type="email"
+                        value={email}
+                      />
+                    </div>
+                  </div>
+                </div>
                 <div className="">
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="font-label-lg text-body-lg font-semibold text-on-surface" htmlFor="institution-code">
@@ -168,9 +231,11 @@ export default function AccountActivationScreen() {
                     <input
                       className="w-full pl-11 pr-4 py-3.5 bg-surface-container-lowest text-on-surface font-body-md text-body-lg rounded-xl shadow-[0_1px_4px_rgba(91,75,219,0.04)] placeholder:text-outline-variant focus:outline-none focus:shadow-[0_0_0_3px_#e4dfff] transition-all uppercase tracking-wider"
                       id="institution-code"
+                      onChange={(e) => setInstitutionCode(e.target.value)}
                       placeholder="e.g. STJUDE-MNL-2025"
                       required
                       type="text"
+                      value={institutionCode}
                     />
                   </div>
                 </div>
@@ -188,9 +253,11 @@ export default function AccountActivationScreen() {
                     <input
                       className="w-full pl-11 pr-4 py-3.5 bg-surface-container-lowest text-on-surface font-body-md text-body-lg rounded-xl shadow-[0_1px_4px_rgba(91,75,219,0.04)] placeholder:text-outline-variant focus:outline-none focus:shadow-[0_0_0_3px_#e4dfff] transition-all uppercase tracking-wider"
                       id="access-key"
+                      onChange={(e) => setAccessKey(e.target.value)}
                       placeholder={isStudent ? 'KEY-8821-PY' : 'FAC-2025-DEPED'}
                       required
                       type="text"
+                      value={accessKey}
                     />
                   </div>
                 </div>

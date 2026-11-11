@@ -60,6 +60,9 @@ public class SubmissionPersistenceService {
         if (quiz.getStatus() != QuizStatus.PUBLISHED) {
             throw new ResourceNotFoundException("Activity not found.");
         }
+        if (quiz.getDueDate() != null && OffsetDateTime.now(ZoneOffset.UTC).isAfter(quiz.getDueDate())) {
+            throw new BadRequestException("This activity is closed.");
+        }
         if (!enrollmentRepository.existsByStudentIdAndClazzId(studentId, quiz.getClazz().getId())) {
             throw new ForbiddenOperationException("You are not enrolled in this activity's class.");
         }

@@ -1,0 +1,5 @@
+# Opt-in demo data. Activate with SPRING_PROFILES_ACTIVE=dev,seed (or =seed for a
+# throwaway environment). The production guard refuses to start with this profile.
+spring:
+  flyway:
+    locations: classpath:db/migration,classpath:db/seed

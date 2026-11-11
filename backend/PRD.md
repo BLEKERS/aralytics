@@ -179,8 +179,8 @@ The database accurately reflects the ERD: `SCHOOL`, `USER`, `SUBSCRIPTION`, `CLA
 | Phase | Timeline | Key Deliverables | Status |
 |-------|----------|------------------|--------|
 | **Phase 1: MVP Core** | Months 1-4 | Auth, Quiz Engine, Mock AI, Teacher Dashboard. | ✅ **DONE** |
-| **Phase 2: Frontend Integration** | Month 4 | Wire React frontend to Spring Boot API. | 🟡 **IN PROGRESS** |
-| **Phase 3: Post-MVP Features** | Months 5-6 | Notifications, Settings, CSV/PDF Exports, Feedback History. | ⏳ *Planned* |
+| **Phase 2: Frontend Integration** | Month 4 | Wire React frontend to Spring Boot API. | ✅ **DONE** |
+| **Phase 3: Post-MVP Features** | Months 5-6 | Notifications, Settings, CSV/PDF Exports, Feedback History. | ✅ **DONE**|
 | **Phase 4: Real AI & Pilot** | Months 7-8 | Integrate local LLM, onboard 2-3 pilot schools. | ⏳ *Planned* |
 | **Phase 5: Scale & Expand** | Months 9+ | Gamification, multi-language, global expansion. | ⏳ *Planned* |
 

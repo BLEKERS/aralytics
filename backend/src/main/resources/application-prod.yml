@@ -1,5 +1,8 @@
 # Production profile: no seed data, no API documentation UI, conservative logging.
-# Supply JWT_SECRET, DB_*, and activation keys through the environment.
+# Supply JWT_SECRET and DB_* through the environment. Activation keys live per school in
+# the SCHOOL table and are provisioned out-of-band.
+# Password reset links use aralytics.password-reset.frontend-base-url.
+# Set FRONTEND_BASE_URL to the deployed frontend origin in production.
 spring:
   flyway:
     locations: classpath:db/migration

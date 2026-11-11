@@ -4,7 +4,7 @@ AI-powered diagnostic feedback and mastery analytics for Python / CS classrooms 
 
 ## Summary
 
-Aralytics is an AI-supported coding education platform that gives students personalized diagnostic feedback on quizzes and coding scenarios, and gives teachers class dashboards, mastery rosters, and learning analytics. The repository contains a **React frontend prototype** (13 routed screens with React 19 + Vite 8 + Tailwind CSS v4) and a **Spring Boot backend at its 40% milestone**: fixed-key account activation, stateless JWT auth, teacher activity authoring, the student quiz lifecycle, diagnostic feedback, and student/teacher dashboards backed by MySQL. The frontend is not yet wired to the API and still uses sample client-side data for most screens; reports, notifications, practice drills, settings persistence, and a live AI model remain deferred. See [PRD.md](./PRD.md) for the intended product versus current state and [backend/README.md](./backend/README.md) for the implemented API surface.
+Aralytics is an AI-supported coding education platform that gives students personalized diagnostic feedback on quizzes and coding scenarios, and gives teachers class dashboards, mastery rosters, and learning analytics. The **core MVP is fully implemented**: the React frontend (13 routed screens with React 19 + Vite 8 + Tailwind CSS v4) is wired to the Spring Boot backend, covering fixed-key account activation, stateless JWT auth, teacher activity authoring, the student quiz lifecycle with durable drafts, deterministic scoring with mock AI diagnostic feedback, student/teacher dashboards, notifications, persistent teacher settings, feedback history and practice drills, and CSV/PDF report exports — all backed by MySQL. The only post-MVP item still open is replacing the deterministic mock diagnostic engine with a live LLM. See [PRD.md](./PRD.md) for the product scope and [backend/README.md](./backend/README.md) for the API surface.
 
 ## Problem
 
@@ -70,7 +70,7 @@ with an adapter stub that falls back to it. See [backend/README.md](./backend/RE
 |---|---|
 | [SETUP.md](./SETUP.md) | Quick-start, available commands, and demo credentials |
 | [backend/README.md](./backend/README.md) | Backend setup, environment variables, API map, design decisions, and tests |
-| [PRD.md](./PRD.md) | Product requirements; prototype vs. production scope |
+| [PRD.md](./PRD.md) | Product requirements and implementation status |
 | [docs/architecture.md](./docs/architecture.md) | Architecture notes (planned backend and AI service) |
 | [docs/requirements.md](./docs/requirements.md) | Functional / non-functional requirements breakdown |
 | [docs/team-roles.md](./docs/team-roles.md) | Team roles and responsibilities |
@@ -81,6 +81,29 @@ with an adapter stub that falls back to it. See [backend/README.md](./backend/RE
 | [LOG.md](./LOG.md) | Chronological append-only log of project changes |
 
 ## Getting Started
+
+### Prerequisites
+
+- JDK 21+ and Node.js 20+ / npm 10+
+- MySQL 8 reachable on port 3306 or 3307, or Docker
+- `GMAIL_USERNAME` and `GMAIL_APP_PASSWORD` set in your environment. The backend `dev` profile sends password-reset email through Gmail SMTP and **will not start without them** — no defaults are committed. Use a Gmail App Password, not your account password.
+
+```powershell
+$env:GMAIL_USERNAME="you@gmail.com"
+$env:GMAIL_APP_PASSWORD="your-16-character-app-password"
+```
+
+You can also copy `backend/.env.example` to `backend/.env` and fill the values there; `docker compose` reads it automatically.
+
+### One-click launch (Windows)
+
+If `run-app.bat` exists in the repository root (it is a local-only helper and is not committed), double-click it. It checks Java 17+, Node.js, `frontend/node_modules` (installing if missing), and MySQL on port 3306/3307, prompts for the Gmail variables if they are not already set, then opens two windows: the Spring Boot API on `http://localhost:8080` and the Vite frontend on `http://localhost:3000`. Close those windows to stop the app.
+
+To run only the environment check:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\check-env.ps1
+```
 
 Requires Node.js v20+ and npm v10+.
 
@@ -97,15 +120,15 @@ npm run lint    # oxlint across frontend/src/
 npm run build   # production bundle into frontend/dist/
 ```
 
-Demo mode sign-in accepts any non-empty credentials and routes to the Student or Teacher view based on the selected role tab. Demo credentials and activation examples are for local development only — do not use them in production. See [SETUP.md](./SETUP.md).
+The login screen pre-fills the seeded demo credentials (student `miguel@school.edu.ph` / `student123`, teacher `maria.santos@university.edu.ph` / `teacher123`) and authenticates against the real API. They come from the local `seed` profile only — change them before any real deployment. See [SETUP.md](./SETUP.md).
 
-### Backend (40% milestone)
+### Backend
 
 Requires JDK 21+ and MySQL 8 (or Docker). The API runs at `http://localhost:8080`.
 
 ```powershell
 cd backend
-docker compose up --build      # MySQL + API with the dev seed and Swagger UI
+docker compose up --build      # MySQL + API with the prod profile (JWT_SECRET required)
 ```
 
 Or run against a local MySQL with the Maven wrapper:
@@ -113,14 +136,15 @@ Or run against a local MySQL with the Maven wrapper:
 ```powershell
 cd backend
 $env:JAVA_HOME="C:\Program Files\Java\jdk-21"
-.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev,seed"
 .\mvnw.cmd -B verify           # unit + integration tests
 ```
 
-Configuration is environment-driven; copy `backend/.env.example` to `backend/.env`. Swagger is
-available at `/swagger-ui.html` and health at `/actuator/health` under the dev profile. Demo
-credentials, API routes, the security model, and the 501 (deferred) endpoint list are documented
-in [backend/README.md](./backend/README.md).
+Configuration is environment-driven; copy `backend/.env.example` to `backend/.env`. The `dev`
+profile sends password-reset email through Gmail SMTP, so it **requires `GMAIL_USERNAME` and
+`GMAIL_APP_PASSWORD` to be set** (no defaults are committed) — the backend will not start without
+them. The `test` profile needs neither. Swagger is available at `/swagger-ui.html` and health at
+`/actuator/health` under the dev profile; the demo data needs the `seed` profile. Demo credentials, API routes, the security model, and endpoint coverage are documented in [backend/README.md](./backend/README.md).
 
 ## Branching & Workflow
 

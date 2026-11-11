@@ -43,18 +43,20 @@ The `/login` screen pre-fills default demo credentials automatically when switch
 | **Student** | `miguel@school.edu.ph` | `s2024-9102` | `student123` | `/student/dashboard` |
 | **Teacher / Educator** | `maria.santos@university.edu.ph` | `t2024-0104` | `teacher123` | `/teacher/dashboard` |
 
-> **Demo Mode Behavior**: In frontend standalone mode (prior to backend auth integration), clicking **Sign In to Aralytics** with the pre-filled (or any non-empty) credentials simulates authentication (`900ms` spinner → `600ms` verified badge) and navigates directly to `/student/dashboard` or `/teacher/dashboard` based on the active role tab.
+> **Backend Required**: Sign In calls `POST /api/auth/login`; the app only navigates on a successful response and shows the API error otherwise.
 
 ---
 
 ### Account Activation & Registration (`/register`)
 
-When testing the institutional onboarding flow on `/register`:
+When testing the institutional onboarding flow on `/register`, the backend must be running with the
+demo data (`SPRING_PROFILES_ACTIVE=dev,seed`). The screen calls `POST /api/auth/verify-key` then
+`POST /api/auth/activate`, and asks for full name and email in addition to the fields below.
 
 | Role | School / Institution Code | Issued Access Key / PIN | Password Requirement | Redirects To |
 |---|---|---|---|---|
-| **Student Activation** | `STJUDE-MNL-2025` (or `STJUDE-CS-2025`) | `KEY-8821-PY` | 8+ chars, ≥1 number, matching confirm (e.g. `Student123!`) | `/student/dashboard` |
-| **Teacher / School Setup** | `STJUDE-MNL-2025` (or `STJUDE-CS-2025`) | `FAC-2025-DEPED` | 8+ chars, ≥1 number, matching confirm (e.g. `Teacher123!`) | `/teacher/dashboard` |
+| **Student Activation** | `STJUDE-MNL-2025` | `KEY-8821-PY` | 8+ chars, ≥1 number, matching confirm (e.g. `Student123!`) | `/student/dashboard` |
+| **Teacher / School Setup** | `STJUDE-MNL-2025` | `FAC-2025-DEPED` | 8+ chars, ≥1 number, matching confirm (e.g. `Teacher123!`) | `/teacher/dashboard` |
 
 ---
 

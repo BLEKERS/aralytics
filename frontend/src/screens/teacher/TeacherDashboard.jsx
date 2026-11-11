@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { api, getStoredClasses, getStoredUser } from '../../api/client'
+import { api, getStoredClasses, getStoredUser, saveBlob } from '../../api/client'
 import { useApiResource } from '../../api/useApiResource'
 import { DataError, LoadingBlock } from '../../components/DataState'
 
@@ -108,7 +108,7 @@ function formatDate(value) {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
-function mapRosterItem(item, threshold) {
+function mapRosterItem(item, threshold, section) {
   const score = item.averageScore == null ? 0 : Math.round(Number(item.averageScore))
   const statusValue = statusForScore(score, threshold)
   const status = STATUS_META[statusValue]
@@ -137,7 +137,7 @@ function mapRosterItem(item, threshold) {
       .slice(0, 2)
       .toUpperCase(),
     name: item.fullName || item.username || `Student ${item.studentId}`,
-    section: 'Section A',
+    section: section || '—',
     score,
     scoreColor: status.color,
     barColor: status.bar,
@@ -156,225 +156,54 @@ function mapRosterItem(item, threshold) {
   }
 }
 
-const BENCHMARK_TABLE = [
-  { week: 'Week 1', assessment: 'Variables & Data Types (int, float, str)', score: '72.0%', delta: '-8.0%', deltaClass: 'text-error' },
-  { week: 'Week 2', assessment: 'Conditionals (if, elif, else) & Booleans', score: '75.0%', delta: '-5.0%', deltaClass: 'text-error' },
-  { week: 'Week 3', assessment: 'Loops: While Loops & Loop Conditions', score: '79.0%', delta: '-1.0%', deltaClass: 'text-on-surface-variant' },
-  { week: 'Week 4', assessment: 'Loops: For Loops & range() Indexing', score: '78.0%', delta: '-2.0%', deltaClass: 'text-on-surface-variant' },
-  { week: 'Week 5', assessment: 'Functions, Parameters & Return Values', score: '82.0%', delta: '+2.0%', deltaClass: 'text-[#22A06B] font-bold' },
-]
-
-const CONCEPT_SCORES = [
-  {
-    emoji: '🔀',
-    emojiColor: 'text-primary',
-    name: 'Conditional Logic (if / elif / else)',
-    category: 'Logic',
-    pct: 91,
-    pctColor: 'text-[#22A06B]',
-    barColor: 'bg-[#22A06B]',
-  },
-  {
-    emoji: '⚙️',
-    emojiColor: 'text-secondary',
-    name: 'Functions & Return Values',
-    category: 'Functions',
-    pct: 88,
-    pctColor: 'text-[#22A06B]',
-    barColor: 'bg-[#22A06B]',
-  },
-  {
-    emoji: '🔁',
-    emojiColor: 'text-primary',
-    name: 'Python Loops (For & While)',
-    category: 'Logic',
-    pct: 78,
-    pctColor: 'text-primary',
-    barColor: 'bg-primary-container',
-  },
-  {
-    emoji: '🐛',
-    emojiColor: 'text-tertiary',
-    name: 'Syntax Errors & Debugging',
-    category: 'Syntax',
-    pct: 68,
-    pctColor: 'text-tertiary',
-    barColor: 'bg-tertiary-fixed-dim',
-  },
-]
-
-const ROSTER_STUDENTS = [
-  {
-    initials: 'MR',
-    id: 'CS-2024-001',
-    name: 'Miguel Ramos',
-    section: 'Section A',
-    score: 58,
-    scoreColor: 'text-error',
-    barColor: 'bg-error',
-    trend: '-6%',
-    trendColor: 'text-error',
-    statusValue: 'needs-help',
-    statusLabel: 'Needs Help (<70%)',
-    statusColor: 'text-error',
-    statusDot: 'bg-error',
-    lastActive: '15 mins ago',
-    mailTitle: 'Send Hint',
-    modalStatus: 'Needs Help',
-    observation:
-      'Off-by-one errors in while loops & index out of range exceptions.',
-  },
-  {
-    initials: 'CD',
-    id: 'CS-2024-002',
-    name: 'Carlos Diaz',
-    section: 'Section A',
-    score: 62,
-    scoreColor: 'text-error',
-    barColor: 'bg-error',
-    trend: '-4%',
-    trendColor: 'text-error',
-    statusValue: 'needs-help',
-    statusLabel: 'Needs Help (<70%)',
-    statusColor: 'text-error',
-    statusDot: 'bg-error',
-    lastActive: '1 hour ago',
-    mailTitle: 'Send Hint',
-    modalStatus: 'Needs Help',
-    observation:
-      'Variable scope confusion: attempting to modify global accumulator in local def.',
-  },
-  {
-    initials: 'JC',
-    id: 'CS-2024-003',
-    name: 'Jasmine Cruz',
-    section: 'Section A',
-    score: 68,
-    scoreColor: 'text-tertiary',
-    barColor: 'bg-tertiary-fixed-dim',
-    trend: '+2%',
-    trendColor: 'text-[#22A06B]',
-    statusValue: 'needs-nudge',
-    statusLabel: 'Needs Nudge (<70%)',
-    statusColor: 'text-tertiary',
-    statusDot: 'bg-[#F4BF32]',
-    lastActive: '3 hours ago',
-    mailTitle: 'Send Hint',
-    modalStatus: 'Needs a Nudge',
-    observation:
-      'Return vs Print distinction tripping up automated pytest runs.',
-  },
-  {
-    initials: 'PG',
-    id: 'CS-2024-004',
-    name: 'Paolo Garcia',
-    section: 'Section A',
-    score: 69,
-    scoreColor: 'text-tertiary',
-    barColor: 'bg-tertiary-fixed-dim',
-    trend: '+3%',
-    trendColor: 'text-[#22A06B]',
-    statusValue: 'needs-nudge',
-    statusLabel: 'Needs Nudge (<70%)',
-    statusColor: 'text-tertiary',
-    statusDot: 'bg-[#F4BF32]',
-    lastActive: 'Yesterday',
-    mailTitle: 'Send Hint',
-    modalStatus: 'Needs a Nudge',
-    observation:
-      'Indentation and formatting errors on nested blocks.',
-  },
-  {
-    initials: 'BM',
-    id: 'CS-2024-005',
-    name: 'Bea Mendoza',
-    section: 'Section A',
-    score: 96,
-    scoreColor: 'text-[#22A06B]',
-    barColor: 'bg-[#22A06B]',
-    trend: '+4%',
-    trendColor: 'text-[#22A06B]',
-    statusValue: 'on-track',
-    statusLabel: 'On Track (≥70%)',
-    statusColor: 'text-[#22A06B]',
-    statusDot: 'bg-[#22A06B]',
-    lastActive: 'Today, 8:15 AM',
-    mailTitle: 'Send Praise',
-    modalStatus: 'On Track',
-    observation:
-      'Flawless recursion and algorithmic decomposition.',
-  },
-  {
-    initials: 'LF',
-    id: 'CS-2024-006',
-    name: 'Luis Fernando',
-    section: 'Section A',
-    score: 92,
-    scoreColor: 'text-[#22A06B]',
-    barColor: 'bg-[#22A06B]',
-    trend: '+5%',
-    trendColor: 'text-[#22A06B]',
-    statusValue: 'on-track',
-    statusLabel: 'On Track (≥70%)',
-    statusColor: 'text-[#22A06B]',
-    statusDot: 'bg-[#22A06B]',
-    lastActive: 'Today, 9:00 AM',
-    mailTitle: 'Send Praise',
-    modalStatus: 'On Track',
-    observation:
-      'Clean function abstraction and good variable naming conventions.',
-  },
-]
-
 export default function TeacherDashboard() {
-  const [chartMode, setChartMode] = useState('chart')
   const [masteryFilter, setMasteryFilter] = useState('All')
   const [rosterFilter, setRosterFilter] = useState('all')
   const [studentSearch, setStudentSearch] = useState('')
   const [modalStudent, setModalStudent] = useState(null)
-  const [exporting, setExporting] = useState(false)
+  const [exporting, setExporting] = useState(null)
   const [toast, setToast] = useState(null)
   const toastTimer = useRef(null)
-  const exportTimer = useRef(null)
 
   // Live cohort data. Both endpoints are part of the 40% milestone.
   const dashboard = useApiResource(() => api.teacher.dashboard(), [])
-  const roster = useApiResource(() => api.teacher.students({ page: 1, size: 100 }), [])
   const [page, setPage] = useState(1)
+  const pageSize = 6
+  const roster = useApiResource(
+    () =>
+      api.teacher.students({
+        search: studentSearch.trim() || undefined,
+        status: rosterFilter === 'all' ? undefined : rosterFilter,
+        page,
+        size: pageSize,
+      }),
+    [studentSearch, rosterFilter, page]
+  )
   const user = getStoredUser()
-  const classLabel = getStoredClasses()[0]?.name || 'CS 101 - Intro to Python (Section A)'
+  const classLabel = getStoredClasses()[0]?.name || 'Your class'
   const threshold = dashboard.data?.threshold ?? 70
 
   const rosterStudents = (Array.isArray(roster.data?.items) ? roster.data.items : []).map((item) =>
-    mapRosterItem(item, threshold)
+    mapRosterItem(item, threshold, classLabel)
   )
-  const statusCounts = rosterStudents.reduce(
-    (counts, student) => {
-      counts.all += 1
-      counts[student.statusValue] += 1
-      return counts
-    },
-    { all: 0, 'on-track': 0, 'needs-nudge': 0, 'needs-help': 0 }
-  )
+  // Counts come from the dashboard aggregate so they cover the whole cohort, not one page.
+  const statusCounts = {
+    all: dashboard.data?.studentCount ?? 0,
+    'on-track': dashboard.data?.onTrackCount ?? 0,
+    'needs-nudge': dashboard.data?.needsNudgeCount ?? 0,
+    'needs-help': dashboard.data?.strugglingCount ?? 0,
+  }
   const rosterFilters = ROSTER_FILTERS.map((filter) => ({
     ...filter,
     label: `${filter.label} (${statusCounts[filter.value]})`,
   }))
 
-  const filteredStudents = rosterStudents.filter(
-    (student) =>
-      (rosterFilter === 'all' || student.statusValue === rosterFilter) &&
-      student.name.toLowerCase().includes(studentSearch.toLowerCase().trim())
-  )
-  const pageSize = 6
-  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / pageSize))
+  const totalStudents = roster.data?.totalItems ?? 0
+  const totalPages = Math.max(1, roster.data?.totalPages ?? 1)
   const currentPage = Math.min(page, totalPages)
-  const pagedStudents = filteredStudents.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  )
-  const showingFrom = filteredStudents.length === 0 ? 0 : (currentPage - 1) * pageSize + 1
-  const showingTo = Math.min(currentPage * pageSize, filteredStudents.length)
+  const pagedStudents = rosterStudents
+  const showingFrom = totalStudents === 0 ? 0 : (currentPage - 1) * pageSize + 1
+  const showingTo = Math.min(currentPage * pageSize, totalStudents)
   const firstPageInWindow = Math.max(1, Math.min(currentPage - 2, totalPages - 4))
   const pageNumbers = []
   for (let p = firstPageInWindow; p <= Math.min(totalPages, firstPageInWindow + 4); p += 1) {
@@ -385,13 +214,7 @@ export default function TeacherDashboard() {
     setPage(1)
   }, [rosterFilter, studentSearch])
 
-  useEffect(
-    () => () => {
-      clearTimeout(toastTimer.current)
-      clearTimeout(exportTimer.current)
-    },
-    []
-  )
+  useEffect(() => () => clearTimeout(toastTimer.current), [])
 
   function showToast(message) {
     setToast(message)
@@ -421,21 +244,27 @@ export default function TeacherDashboard() {
     showToast(`Code hint sent to ${name} ✉️`)
   }
 
-  function exportLabCsv() {
+  async function runExport(kind) {
     if (exporting) return
-    setExporting(true)
-    exportTimer.current = setTimeout(() => {
-      setExporting(false)
-      showToast('Lab CSV exported for CS 101 - Intro to Python (Section A) ✅')
-    }, 900)
+    setExporting(kind)
+    try {
+      const query = { topic: masteryFilter === 'All' ? undefined : masteryFilter }
+      const { blob, filename } =
+        kind === 'pdf' ? await api.teacher.exportPdf(query) : await api.teacher.exportCsv(query)
+      saveBlob(blob, filename || `aralytics-cohort.${kind}`)
+      showToast(`Cohort ${kind.toUpperCase()} exported ✅`)
+    } catch (error) {
+      showToast(error.message || `Could not export the ${kind.toUpperCase()}.`)
+    } finally {
+      setExporting(null)
+    }
   }
 
   const apiConcepts = (Array.isArray(dashboard.data?.classConceptMastery)
     ? dashboard.data.classConceptMastery
     : []
   ).map(conceptVisual)
-  const conceptSource = apiConcepts.length ? apiConcepts : CONCEPT_SCORES
-  const visibleConcepts = conceptSource.filter(
+  const visibleConcepts = apiConcepts.filter(
     (concept) => masteryFilter === 'All' || concept.category === masteryFilter
   )
 
@@ -444,7 +273,7 @@ export default function TeacherDashboard() {
     { value: 'needs-nudge', color: '#F4BF32', label: 'Needs a Nudge' },
     { value: 'needs-help', color: '#BA1A1A', label: 'Needs Help' },
   ]
-  const distributionTotal = rosterStudents.length
+  const distributionTotal = statusCounts.all
   const distributionCircumference = 2 * Math.PI * 38
   const percentOfCohort = (count) =>
     distributionTotal ? Math.round((count / distributionTotal) * 100) : 0
@@ -467,7 +296,7 @@ export default function TeacherDashboard() {
 
   const formatMetric = (value, suffix = '%') =>
     value === null || value === undefined ? '—' : `${Number(value).toFixed(1)}${suffix}`
-  const studentCount = dashboard.data?.studentCount ?? rosterStudents.length
+  const studentCount = dashboard.data?.studentCount ?? statusCounts.all
   const belowThresholdCount = dashboard.data?.belowThresholdCount ?? statusCounts['needs-help']
   const firstName = user?.fullName?.split(' ')[0] || 'Teacher'
 
@@ -492,16 +321,25 @@ export default function TeacherDashboard() {
             </div>
             <button
               className="inline-flex items-center gap-1.5 bg-surface-container-lowest px-space-md py-2 rounded-xl shadow-sm text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors disabled:opacity-60"
-              disabled={exporting}
-              onClick={exportLabCsv}
+              disabled={Boolean(exporting)}
+              onClick={() => runExport('csv')}
               type="button"
             >
               <span className="material-symbols-outlined text-[18px]">download</span>
-              <span className="font-label-md text-label-md">{exporting ? 'Exporting…' : 'Export Lab CSV'}</span>
+              <span className="font-label-md text-label-md">{exporting === 'csv' ? 'Exporting…' : 'Export Lab CSV'}</span>
+            </button>
+            <button
+              className="inline-flex items-center gap-1.5 bg-surface-container-lowest px-space-md py-2 rounded-xl shadow-sm text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors disabled:opacity-60"
+              disabled={Boolean(exporting)}
+              onClick={() => runExport('pdf')}
+              type="button"
+            >
+              <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+              <span className="font-label-md text-label-md">{exporting === 'pdf' ? 'Exporting…' : 'Export PDF'}</span>
             </button>
             <button
               className="inline-flex items-center gap-1.5 bg-primary-container text-on-primary px-space-md py-2 rounded-xl shadow-md hover:bg-primary transition-all"
-              onClick={() => showToast('Generating AI code diagnostics for CS 101 - Intro to Python (Section A) ✨')}
+              onClick={() => showToast(`Generating AI code diagnostics for ${classLabel} ✨`)}
               type="button"
             >
               <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
@@ -599,115 +437,20 @@ export default function TeacherDashboard() {
         </div>
         {/* ROW 2: Class Trajectory & Risk Distribution (8 cols + 4 cols) */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-space-lg mb-space-lg">
-          {/* Left: Score Trajectory Chart (8 cols) */}
+          {/* Left: Score Trajectory (8 cols) — no benchmark series endpoint exists yet */}
           <div className="xl:col-span-8 bg-surface-container-lowest rounded-[20px] p-space-lg shadow-[0_4px_16px_rgba(91,75,219,0.08)] flex flex-col justify-between">
             <div>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm mb-space-md">
-                <div>
-                  <h3 className="font-headline-sm text-headline-sm text-on-surface">Coding Benchmark Scores Over Time</h3>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant">Weekly test suite pass rates across CS 101 curriculum</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="inline-flex p-1 bg-surface-container rounded-xl">
-                    <button
-                      className={chartMode === 'chart' ? FILTER_TAB_ACTIVE : FILTER_TAB_IDLE}
-                      onClick={() => setChartMode('chart')}
-                      type="button"
-                    >
-                      Line Chart
-                    </button>
-                    <button
-                      className={chartMode === 'table' ? FILTER_TAB_ACTIVE : FILTER_TAB_IDLE}
-                      onClick={() => setChartMode('table')}
-                      type="button"
-                    >
-                      Table View
-                    </button>
-                  </div>
-                </div>
+              <div className="mb-space-md">
+                <h3 className="font-headline-sm text-headline-sm text-on-surface">Coding Benchmark Scores Over Time</h3>
+                <p className="font-body-sm text-body-sm text-on-surface-variant">Weekly test suite pass rates across the curriculum</p>
               </div>
-              {/* SVG Line Chart Canvas */}
-              <div className={chartMode === 'chart' ? 'w-full h-64 relative mt-2' : 'hidden w-full h-64 relative mt-2'}>
-                <svg className="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 650 220">
-                  <defs>
-                    <linearGradient id="areaGradient" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="0%" stopColor="#5B4BDB" stopOpacity="0.12" />
-                      <stop offset="100%" stopColor="#5B4BDB" stopOpacity="0.0" />
-                    </linearGradient>
-                  </defs>
-                  {/* Horizontal Gridlines & Y-Axis values */}
-                  <line stroke="#EDECFF" strokeWidth="1" x1="40" x2="630" y1="30" y2="30" />
-                  <text fill="#787586" fontFamily="Inter" fontSize="10" textAnchor="end" x="30" y="34">90%</text>
-                  <line stroke="#006B5F" strokeDasharray="4 4" strokeOpacity="0.35" strokeWidth="1" x1="40" x2="630" y1="80" y2="80" />
-                  <text fill="#006B5F" fontFamily="Inter" fontSize="10" fontWeight="500" textAnchor="end" x="30" y="84">80%</text>
-                  <line stroke="#EDECFF" strokeWidth="1" x1="40" x2="630" y1="130" y2="130" />
-                  <text fill="#787586" fontFamily="Inter" fontSize="10" textAnchor="end" x="30" y="134">70%</text>
-                  <line stroke="#EDECFF" strokeWidth="1" x1="40" x2="630" y1="180" y2="180" />
-                  <text fill="#787586" fontFamily="Inter" fontSize="10" textAnchor="end" x="30" y="184">60%</text>
-                  {/* Area Fill */}
-                  <polygon fill="url(#areaGradient)" points="60,120 170,105 280,85 390,90 500,70 610,57 610,185 60,185" />
-                  {/* Trajectory Line */}
-                  <polyline fill="none" points="60,120 170,105 280,85 390,90 500,70 610,57" stroke="#5B4BDB" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
-                  {/* Data Point Circles */}
-                  <circle className="cursor-pointer transition-transform hover:scale-150" cx="60" cy="120" fill="#FFFFFF" r="4" stroke="#5B4BDB" strokeWidth="2.5" />
-                  <text fill="#787586" fontFamily="Inter" fontSize="11" textAnchor="middle" x="60" y="202">W1</text>
-                  <circle className="cursor-pointer transition-transform hover:scale-150" cx="170" cy="105" fill="#FFFFFF" r="4" stroke="#5B4BDB" strokeWidth="2.5" />
-                  <text fill="#787586" fontFamily="Inter" fontSize="11" textAnchor="middle" x="170" y="202">W2</text>
-                  <circle className="cursor-pointer transition-transform hover:scale-150" cx="280" cy="85" fill="#FFFFFF" r="4" stroke="#5B4BDB" strokeWidth="2.5" />
-                  <text fill="#787586" fontFamily="Inter" fontSize="11" textAnchor="middle" x="280" y="202">W3</text>
-                  <circle className="cursor-pointer transition-transform hover:scale-150" cx="390" cy="90" fill="#FFFFFF" r="4" stroke="#5B4BDB" strokeWidth="2.5" />
-                  <text fill="#787586" fontFamily="Inter" fontSize="11" textAnchor="middle" x="390" y="202">W4</text>
-                  <circle className="cursor-pointer transition-transform hover:scale-150" cx="500" cy="70" fill="#FFFFFF" r="4" stroke="#5B4BDB" strokeWidth="2.5" />
-                  <text fill="#787586" fontFamily="Inter" fontSize="11" textAnchor="middle" x="500" y="202">W5</text>
-                  {/* Week 6 Current Highlight */}
-                  <circle cx="610" cy="57" fill="#5B4BDB" r="5" stroke="#FFFFFF" strokeWidth="2" />
-                  <text fill="#151936" fontFamily="Inter" fontSize="11" fontWeight="600" textAnchor="middle" x="610" y="202">W6</text>
-                  <text fill="#422EC2" fontFamily="Nunito Sans" fontSize="11" fontWeight="700" textAnchor="middle" x="610" y="46">84.6%</text>
-                </svg>
+              <div className="p-space-lg rounded-xl bg-surface-container-low text-center">
+                <span className="material-symbols-outlined text-[28px] text-on-surface-variant">show_chart</span>
+                <p className="font-body-md text-body-md text-on-surface-variant mt-1">
+                  No weekly benchmark data is available yet. Scores will appear here once the backend exposes an
+                  assessment series.
+                </p>
               </div>
-              {/* Table View representation (hidden by default) */}
-              <div className={chartMode === 'table' ? 'w-full overflow-x-auto mt-2' : 'hidden w-full overflow-x-auto mt-2'}>
-                <table className="w-full text-left font-body-sm text-body-sm">
-                  <thead>
-                    <tr className="text-on-surface-variant bg-surface-container-low">
-                      <th className="py-2 px-3 rounded-l-lg">Curriculum Week</th>
-                      <th className="py-2 px-3">Primary Assessment</th>
-                      <th className="py-2 px-3">Average Score</th>
-                      <th className="py-2 px-3 rounded-r-lg">Standard Delta</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y-0 text-on-surface">
-                    {BENCHMARK_TABLE.map((row) => (
-                      <tr className="hover:bg-surface-container-low transition-colors" key={row.week}>
-                        <td className="py-2.5 px-3 font-semibold">{row.week}</td>
-                        <td className="py-2.5 px-3">{row.assessment}</td>
-                        <td className="py-2.5 px-3 font-bold">{row.score}</td>
-                        <td className={`py-2.5 px-3 ${row.deltaClass}`}>{row.delta}</td>
-                      </tr>
-                    ))}
-                    <tr className="bg-primary-fixed/30 hover:bg-primary-fixed/50 transition-colors">
-                      <td className="py-2.5 px-3 font-bold text-primary">Week 6 (Current)</td>
-                      <td className="py-2.5 px-3">Debugging: Scope &amp; Off-by-One Errors</td>
-                      <td className="py-2.5 px-3 font-bold text-primary">84.6%</td>
-                      <td className="py-2.5 px-3 text-[#22A06B] font-bold">+4.6%</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            {/* Chart Legend & Benchmark indicators */}
-            <div className="flex flex-wrap items-center justify-between gap-space-sm pt-space-sm mt-space-sm">
-              <div className="flex items-center gap-space-md">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-full bg-primary-container" />
-                  <span className="font-label-sm text-label-sm text-on-surface">Actual Class Average</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3.5 h-1 border-t-2 border-dashed border-[#006B5F]" />
-                  <span className="font-label-sm text-label-sm text-secondary">Target Standard (80%)</span>
-                </div>
-              </div>
-              <span className="font-label-sm text-label-sm text-on-surface-variant">✨ Consistent weekly growth since Week 1</span>
             </div>
           </div>
           {/* Right: Class Status Distribution Donut (4 cols) */}
@@ -818,6 +561,11 @@ export default function TeacherDashboard() {
                     </div>
                   </div>
                 ))}
+                {visibleConcepts.length === 0 && (
+                  <p className="font-body-sm text-body-sm text-on-surface-variant">
+                    No concept mastery records yet. They appear after students submit their first activity.
+                  </p>
+                )}
               </div>
             </div>
             <div className="mt-space-lg pt-space-sm flex items-center justify-between bg-surface-container-low p-3 rounded-xl">
@@ -867,7 +615,7 @@ export default function TeacherDashboard() {
               </div>
               <button
                 className="inline-flex items-center gap-1 bg-surface-container-low px-3 py-1.5 rounded-xl text-on-surface-variant hover:text-primary transition-colors font-label-sm text-label-sm"
-                onClick={exportLabCsv}
+                onClick={() => runExport('csv')}
                 type="button"
               >
                 <span className="material-symbols-outlined text-[16px]">file_download</span> Export
@@ -946,7 +694,7 @@ export default function TeacherDashboard() {
                         ? 'Loading learners from the backend…'
                         : roster.error
                           ? 'Learner data is unavailable. Check that the backend is running, then retry.'
-                          : rosterStudents.length === 0
+                          : statusCounts.all === 0
                             ? 'No learners are enrolled in this cohort yet.'
                             : 'No learners match this filter or search.'}
                     </td>
@@ -958,9 +706,9 @@ export default function TeacherDashboard() {
           {/* Pagination Footer */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-space-sm pt-space-md mt-space-sm">
             <span className="font-body-sm text-body-sm text-on-surface-variant">
-              {filteredStudents.length === 0
-                ? `Showing 0 of ${rosterStudents.length} students`
-                : `Showing ${showingFrom} to ${showingTo} of ${filteredStudents.length} students`}
+              {totalStudents === 0
+                ? 'Showing 0 students'
+                : `Showing ${showingFrom} to ${showingTo} of ${totalStudents} students`}
             </span>
             <div className="flex items-center gap-1">
               <button
@@ -1037,11 +785,11 @@ export default function TeacherDashboard() {
               </div>
               <div className="p-2.5 bg-surface-container rounded-xl">
                 <span className="font-label-sm text-label-sm text-on-surface-variant block">Avg Duration</span>
-                <span className="font-headline-sm text-headline-sm text-on-surface font-bold">14m 20s</span>
+                <span className="font-headline-sm text-headline-sm text-on-surface font-bold">—</span>
               </div>
               <div className="p-2.5 bg-surface-container rounded-xl">
                 <span className="font-label-sm text-label-sm text-on-surface-variant block">Attendance</span>
-                <span className="font-headline-sm text-headline-sm text-[#22A06B] font-bold">94%</span>
+                <span className="font-headline-sm text-headline-sm text-on-surface font-bold">—</span>
               </div>
             </div>
             {/* Quick Action / Encouragement Message Field */}

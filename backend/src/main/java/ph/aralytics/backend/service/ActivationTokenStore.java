@@ -36,6 +36,18 @@ public class ActivationTokenStore {
         return pending;
     }
 
+    /** Reads a token without consuming it so activation can validate input first. */
+    public Optional<PendingActivation> peek(String token) {
+        if (token == null) {
+            return Optional.empty();
+        }
+        PendingActivation pending = tokens.get(token);
+        if (pending == null || pending.expiresAt().isBefore(Instant.now())) {
+            return Optional.empty();
+        }
+        return Optional.of(pending);
+    }
+
     public Optional<PendingActivation> consume(String token) {
         PendingActivation pending = tokens.remove(token);
         if (pending == null) {

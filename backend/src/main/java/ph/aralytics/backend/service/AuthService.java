@@ -2,8 +2,10 @@ package ph.aralytics.backend.service;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.HexFormat;
 import java.util.List;
 
 import org.springframework.security.authentication.AuthenticationManager;
@@ -15,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import io.jsonwebtoken.Claims;
-import ph.aralytics.backend.config.AralyticsProperties;
 import ph.aralytics.backend.domain.ClassEntity;
 import ph.aralytics.backend.domain.Enrollment;
 import ph.aralytics.backend.domain.Role;
@@ -29,6 +30,7 @@ import ph.aralytics.backend.repository.ClassRepository;
 import ph.aralytics.backend.repository.EnrollmentRepository;
 import ph.aralytics.backend.repository.SchoolRepository;
 import ph.aralytics.backend.repository.UserRepository;
+import ph.aralytics.backend.security.AuthRateLimiter;
 import ph.aralytics.backend.security.JwtDenylist;
 import ph.aralytics.backend.security.JwtService;
 import ph.aralytics.backend.web.dto.AuthDtos;
@@ -45,14 +47,14 @@ public class AuthService {
     private final JwtDenylist jwtDenylist;
     private final ActivationTokenStore activationTokenStore;
     private final AuthenticationManager authenticationManager;
-    private final AralyticsProperties properties;
     private final DtoMapper dtoMapper;
+    private final AuthRateLimiter authRateLimiter;
 
     public AuthService(SchoolRepository schoolRepository, UserRepository userRepository,
             ClassRepository classRepository, EnrollmentRepository enrollmentRepository,
             PasswordEncoder passwordEncoder, JwtService jwtService, JwtDenylist jwtDenylist,
             ActivationTokenStore activationTokenStore, AuthenticationManager authenticationManager,
-            AralyticsProperties properties, DtoMapper dtoMapper) {
+            DtoMapper dtoMapper, AuthRateLimiter authRateLimiter) {
         this.schoolRepository = schoolRepository;
         this.userRepository = userRepository;
         this.classRepository = classRepository;
@@ -62,8 +64,8 @@ public class AuthService {
         this.jwtDenylist = jwtDenylist;
         this.activationTokenStore = activationTokenStore;
         this.authenticationManager = authenticationManager;
-        this.properties = properties;
         this.dtoMapper = dtoMapper;
+        this.authRateLimiter = authRateLimiter;
     }
 
     /**
@@ -71,14 +73,19 @@ public class AuthService {
      * Errors stay deliberately generic so callers cannot enumerate schools or keys.
      */
     public AuthDtos.VerifyKeyResponse verifyKey(AuthDtos.VerifyKeyRequest request) {
+        authRateLimiter.check(request.institutionCode());
         Role role = parseRole(request.role());
         School school = schoolRepository.findByInstitutionCodeIgnoreCase(request.institutionCode().trim())
-                .orElseThrow(() -> new InvalidCredentialsException("Invalid institution code or access key."));
+                .orElseThrow(() -> {
+                    authRateLimiter.recordFailure(request.institutionCode());
+                    return new InvalidCredentialsException("Invalid institution code or access key.");
+                });
 
-        String expectedKey = role == Role.STUDENT
-                ? properties.activation().studentKey()
-                : properties.activation().teacherKey();
-        if (!constantTimeEquals(expectedKey, request.accessKey())) {
+        String expectedHash = role == Role.STUDENT
+                ? school.getStudentActivationKeyHash()
+                : school.getTeacherActivationKeyHash();
+        if (!keyMatches(request.accessKey(), expectedHash)) {
+            authRateLimiter.recordFailure(request.institutionCode());
             throw new InvalidCredentialsException("Invalid institution code or access key.");
         }
 
@@ -93,7 +100,7 @@ public class AuthService {
 
     @Transactional
     public AuthDtos.AuthResponse activate(AuthDtos.ActivateRequest request) {
-        ActivationTokenStore.PendingActivation pending = activationTokenStore.consume(request.activationToken())
+        ActivationTokenStore.PendingActivation pending = activationTokenStore.peek(request.activationToken())
                 .orElseThrow(() -> new InvalidCredentialsException(
                         "Activation token is invalid, expired, or has already been used."));
 
@@ -113,6 +120,12 @@ public class AuthService {
         user.setSchool(school);
         user.setRole(pending.role());
         user.setCreatedAt(OffsetDateTime.now(ZoneOffset.UTC));
+
+        // Consume only after every validation above passes; a rejected attempt keeps the token.
+        if (activationTokenStore.consume(request.activationToken()).isEmpty()) {
+            throw new InvalidCredentialsException(
+                    "Activation token is invalid, expired, or has already been used.");
+        }
         user = userRepository.save(user);
         final User activated = user;
 
@@ -147,10 +160,12 @@ public class AuthService {
 
     @Transactional
     public AuthDtos.AuthResponse login(AuthDtos.LoginRequest request) {
+        authRateLimiter.check(request.identifier());
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.identifier().trim(), request.password()));
         } catch (AuthenticationException exception) {
+            authRateLimiter.recordFailure(request.identifier());
             throw new InvalidCredentialsException("Invalid email/username or password.");
         }
 
@@ -159,6 +174,47 @@ public class AuthService {
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid email/username or password."));
         user.setLastLogin(OffsetDateTime.now(ZoneOffset.UTC));
         return authResponse(user);
+    }
+
+    @Transactional
+    public AuthDtos.MeResponse updateProfile(Long userId, AuthDtos.ProfileUpdateRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
+
+        String fullName = request.fullName() == null ? "" : request.fullName().trim();
+        if (fullName.isEmpty()) {
+            throw new BadRequestException("Full name is required.");
+        }
+        String username = request.username() == null ? "" : request.username().trim();
+        if (username.isEmpty()) {
+            throw new BadRequestException("Username is required.");
+        }
+        userRepository.findByUsername(username)
+                .filter(existing -> !existing.getId().equals(userId))
+                .ifPresent(existing -> {
+                    throw new ConflictException("That username is already taken.");
+                });
+
+        user.setFullName(fullName);
+        user.setUsername(username);
+        userRepository.save(user);
+        return new AuthDtos.MeResponse(dtoMapper.toUserSummary(user), classesFor(user));
+    }
+
+    @Transactional
+    public void changePassword(Long userId, AuthDtos.ProfileUpdateRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
+        if (request.currentPassword() == null
+                || !passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new BadRequestException("Current password is incorrect.");
+        }
+        String newPassword = request.newPassword();
+        if (newPassword == null || !newPassword.matches("^(?=.*\\d).{8,72}$")) {
+            throw new BadRequestException("New password must be 8-72 characters and contain at least one number.");
+        }
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
     }
 
     @Transactional(readOnly = true)
@@ -226,12 +282,22 @@ public class AuthService {
         };
     }
 
-    private boolean constantTimeEquals(String expected, String provided) {
-        if (expected == null || provided == null) {
+    private boolean keyMatches(String provided, String storedHash) {
+        if (provided == null || storedHash == null) {
             return false;
         }
         return MessageDigest.isEqual(
-                expected.getBytes(StandardCharsets.UTF_8),
-                provided.getBytes(StandardCharsets.UTF_8));
+                sha256Hex(provided).getBytes(StandardCharsets.UTF_8),
+                storedHash.getBytes(StandardCharsets.UTF_8));
+    }
+
+    // Activation keys are high-entropy secrets; a fast hash is enough and keeps verify-key cheap.
+    private String sha256Hex(String value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(digest.digest(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 is unavailable", exception);
+        }
     }
 }

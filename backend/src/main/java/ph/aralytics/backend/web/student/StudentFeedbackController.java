@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import ph.aralytics.backend.exception.NotImplementedException;
 import ph.aralytics.backend.security.AuthenticatedPrincipal;
 import ph.aralytics.backend.service.FeedbackService;
 import ph.aralytics.backend.web.dto.StudentDtos;
@@ -48,10 +47,9 @@ public class StudentFeedbackController {
 
     @PostMapping("/{submissionId}/practice-drill")
     @PreAuthorize("hasRole('STUDENT')")
-    @Operation(summary = "Practice drill generation (not implemented in the 40% milestone)")
-    public void practiceDrill(@AuthenticationPrincipal AuthenticatedPrincipal principal,
-            @PathVariable Long submissionId) {
-        throw new NotImplementedException(
-                "Practice-drill generation is post-40% (PRD FR-AI-04 and section 6.4); no drill is generated.");
+    @Operation(summary = "Generate a 3-question drill from the weak concepts in this feedback")
+    public StudentDtos.PracticeDrillResponse practiceDrill(
+            @AuthenticationPrincipal AuthenticatedPrincipal principal, @PathVariable Long submissionId) {
+        return feedbackService.practiceDrill(principal.userId(), submissionId);
     }
 }

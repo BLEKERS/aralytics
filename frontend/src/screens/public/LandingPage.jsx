@@ -1,14 +1,33 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import BrandLogo from '../../components/BrandLogo';
+import { api } from '../../api/client';
+import { describeApiError } from '../../components/DataState';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
 export default function LandingPage() {
   const [demoOpen, setDemoOpen] = useState(false);
   const [productTab, setProductTab] = useState('students');
-  const [pilotSubmitted, setPilotSubmitted] = useState(false);
+  const [pilotEmail, setPilotEmail] = useState('');
+  const [pilotState, setPilotState] = useState('idle');
+  const [pilotError, setPilotError] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const handlePilotSubmit = async (event) => {
+    event.preventDefault();
+    if (pilotState === 'sending') return;
+    setPilotState('sending');
+    setPilotError(null);
+    try {
+      await api.public.pilotInquiry({ email: pilotEmail });
+      setPilotState('success');
+      setPilotEmail('');
+    } catch (error) {
+      setPilotState('error');
+      setPilotError(describeApiError(error)?.message || error.message);
+    }
+  };
 
   return (
     <div className="bg-background text-on-surface font-body-md text-body-md min-h-screen flex flex-col antialiased selection:bg-primary-fixed selection:text-on-primary-fixed">
@@ -688,20 +707,27 @@ export default function LandingPage() {
                 <p className="font-body-lg text-body-lg text-on-surface-variant leading-relaxed max-w-xl mx-auto">
                   Join over 60 schools and coding educators pioneering diagnostic-first computer science learning. <strong>Free 60-day pilot program for schools and coding academies.</strong>
                 </p>
-                <form className="flex flex-col sm:flex-row items-center gap-3 max-w-lg mx-auto pt-4" onSubmit={(e) => { e.preventDefault(); setPilotSubmitted(true); e.currentTarget.reset(); }}>
+                <form className="flex flex-col sm:flex-row items-center gap-3 max-w-lg mx-auto pt-4" onSubmit={handlePilotSubmit}>
                   <div className="relative w-full">
                     <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-on-surface-variant">
                       <span className="material-symbols-outlined text-[20px]">mail</span>
                     </span>
-                    <input className="w-full pl-10 pr-4 py-3.5 rounded-xl bg-surface-container-low/40 border border-surface-container-high/60 focus:ring-2 focus:ring-primary text-on-surface font-body-md text-body-md shadow-xs outline-none transition-all placeholder:text-outline" placeholder="Enter your school or educator email..." required type="email" />
+                    <input className="w-full pl-10 pr-4 py-3.5 rounded-xl bg-surface-container-low/40 border border-surface-container-high/60 focus:ring-2 focus:ring-primary text-on-surface font-body-md text-body-md shadow-xs outline-none transition-all placeholder:text-outline" placeholder="Enter your school or educator email..." required type="email" value={pilotEmail} onChange={(event) => setPilotEmail(event.target.value)} />
                   </div>
-                  <button className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-primary text-on-primary font-label-lg text-label-lg font-semibold hover:bg-primary-container transition-all whitespace-nowrap shrink-0" type="submit">
-                    Request Coding Pilot
+                  <button className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-primary text-on-primary font-label-lg text-label-lg font-semibold hover:bg-primary-container transition-all whitespace-nowrap shrink-0 disabled:opacity-60" type="submit" disabled={pilotState === 'sending'}>
+                    {pilotState === 'sending' ? 'Sending...' : 'Request Coding Pilot'}
                   </button>
                 </form>
-                <div className={`p-4 rounded-xl bg-surface-container text-on-surface font-label-md text-label-md ${pilotSubmitted ? '' : 'hidden'}`} id="pilot-success-msg">
-                  🎉 Salamat! Our academic onboarding coordinator will email you within 24 hours with your coding lab sandbox credentials.
-                </div>
+                {pilotState === 'success' && (
+                  <div className="p-4 rounded-xl bg-surface-container text-on-surface font-label-md text-label-md" id="pilot-success-msg">
+                    🎉 Salamat! Our academic onboarding coordinator will email you within 24 hours with your coding lab sandbox credentials.
+                  </div>
+                )}
+                {pilotState === 'error' && (
+                  <div className="p-4 rounded-xl bg-error-container/50 border border-error/20 text-error font-label-md text-label-md" role="alert">
+                    {pilotError || 'We could not send your request. Please try again.'}
+                  </div>
+                )}
                 <div className="pt-4 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-on-surface-variant font-label-sm text-label-sm">
                   <span className="flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-secondary text-[16px]">check</span>
