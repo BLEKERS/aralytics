@@ -78,7 +78,7 @@ The database accurately reflects the ERD: `SCHOOL`, `USER`, `SUBSCRIPTION`, `CLA
 
 ## 6. Functional Requirements
 
-### 6.1. Must-Have (MVP) - **STATUS: IMPLEMENTED (Backend)**
+### 6.1. Must-Have (MVP) - **STATUS: IMPLEMENTED (Frontend + Backend)**
 
 #### 6.1.1. User Authentication & Account Management
 - **Fixed System Access:** No public self-registration. Accounts are provisioned via Institution Code (`STJUDE-MNL-2025`) and issued Access Keys (`KEY-8821-PY` / `FAC-2025-DEPED`).
@@ -103,30 +103,30 @@ The database accurately reflects the ERD: `SCHOOL`, `USER`, `SUBSCRIPTION`, `CLA
 
 ---
 
-### 6.2. Should-Have (The Remaining 60%) - **STATUS: TO BE IMPLEMENTED**
+### 6.2. Should-Have (Post-MVP Extensions) - **STATUS: IMPLEMENTED (except real AI)**
 
-#### 6.2.1. Reporting & Exports (FR-RPT)
+#### 6.2.1. Reporting & Exports (FR-RPT) - **✅ DONE**
 - Teachers must be able to generate and download a CSV export of the class roster and scores.
 - Teachers must be able to download a PDF report of cohort analytics.
-- **Endpoints to build:** `GET /api/teacher/reports/export-csv`, `GET /api/teacher/reports/export-pdf`.
+- **Endpoints:** `GET /api/teacher/reports/export-csv`, `GET /api/teacher/reports/export-pdf`.
 
-#### 6.2.2. Persistent Settings (FR-SET)
+#### 6.2.2. Persistent Settings (FR-SET) - **✅ DONE**
 - Teachers must be able to adjust the intervention threshold (e.g., from 70% to 75%).
 - Teachers must be able to set their preferred feedback tone (e.g., Formal English vs. Conversational).
-- **Requirement:** Create a `TEACHER_SETTINGS` table to persist these preferences.
+- **Implementation:** `TEACHER_SETTINGS` table (Flyway `V4__teacher_settings.sql`) behind `GET`/`PUT /api/teacher/settings`.
 
-#### 6.2.3. Notifications & Reminders (FR-NOT)
+#### 6.2.3. Notifications & Reminders (FR-NOT) - **✅ DONE**
 - The system must send in-app notifications for upcoming due dates and completion milestones.
-- **Requirement:** Build the notification delivery service (currently the `NOTIFICATION` table exists but is empty).
+- **Implementation:** `NotificationService` writes to `NOTIFICATION` on publish and submission; student/teacher endpoints list them.
 
-#### 6.2.4. Student Feedback History & Practice Drills (FR-PROG)
+#### 6.2.4. Student Feedback History & Practice Drills (FR-PROG) - **✅ DONE**
 - Students must have a searchable history of all past feedback.
 - Students must be able to generate a "Practice Drill" (3 similar questions) based on their weak concepts.
-- **Endpoints to build:** `GET /api/student/progress/history`, `POST /api/student/feedback/{submissionId}/practice-drill`.
+- **Endpoints:** `GET /api/student/progress/history`, `POST /api/student/feedback/{submissionId}/practice-drill`.
 
-#### 6.2.5. Real AI Integration (FR-AI)
+#### 6.2.5. Real AI Integration (FR-AI) - **⏳ NOT YET**
 - Replace the `MockDiagnosticEngine` with the `LlmDiagnosticEngine`.
-- **Requirement:** Connect to a locally hosted model (e.g., Ollama, Llama 3) to generate the diagnostic feedback dynamically.
+- **Requirement:** Connect to a locally hosted model (e.g., Ollama, Llama 3) to generate the diagnostic feedback dynamically. This is the only post-MVP item still open.
 
 ---
 
@@ -179,8 +179,8 @@ The database accurately reflects the ERD: `SCHOOL`, `USER`, `SUBSCRIPTION`, `CLA
 | Phase | Timeline | Key Deliverables | Status |
 |-------|----------|------------------|--------|
 | **Phase 1: MVP Core** | Months 1-4 | Auth, Quiz Engine, Mock AI, Teacher Dashboard. | ✅ **DONE** |
-| **Phase 2: Frontend Integration** | Month 4 | Wire React frontend to Spring Boot API. | 🟡 **IN PROGRESS** |
-| **Phase 3: Post-MVP Features** | Months 5-6 | Notifications, Settings, CSV/PDF Exports, Feedback History. | ⏳ *Planned* |
+| **Phase 2: Frontend Integration** | Month 4 | Wire React frontend to Spring Boot API. | ✅ **DONE**|
+| **Phase 3: Post-MVP Features** | Months 5-6 | Notifications, Settings, CSV/PDF Exports, Feedback History. | ✅ **DONE** |
 | **Phase 4: Real AI & Pilot** | Months 7-8 | Integrate local LLM, onboard 2-3 pilot schools. | ⏳ *Planned* |
 | **Phase 5: Scale & Expand** | Months 9+ | Gamification, multi-language, global expansion. | ⏳ *Planned* |
 

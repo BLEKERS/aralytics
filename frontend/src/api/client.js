@@ -202,6 +202,57 @@ export async function apiRequest(
   return payload
 }
 
+/**
+ * Downloads a binary response (CSV/PDF export). Uses the same auth header as
+ * `apiRequest` but keeps the body as a Blob instead of parsing JSON.
+ */
+export async function apiDownload(path, { query } = {}) {
+  const token = getToken()
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 30000)
+
+  let response
+  try {
+    response = await fetch(buildUrl(path, query), {
+      signal: controller.signal,
+      headers: {
+        Accept: 'text/csv, application/pdf, */*',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+  } catch (error) {
+    throw offlineError(error, error?.name === 'AbortError')
+  } finally {
+    clearTimeout(timer)
+  }
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      clearSession()
+      redirectToLogin()
+    }
+    const text = await response.text()
+    const detail =
+      parseBody(text)?.detail || `Download failed with status ${response.status}.`
+    throw new ApiError(detail, { status: response.status })
+  }
+
+  const disposition = response.headers.get('Content-Disposition') || ''
+  const match = disposition.match(/filename="?([^";]+)"?/i)
+  return { blob: await response.blob(), filename: match ? match[1] : null }
+}
+
+export function saveBlob(blob, filename) {
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  URL.revokeObjectURL(url)
+}
+
 /* ------------------------------------------------------------------ */
 /* Endpoint map                                                        */
 /* ------------------------------------------------------------------ */
@@ -216,11 +267,65 @@ export const api = {
         redirectOnUnauthorized: false,
       })
     },
+    verifyKey(payload) {
+      return apiRequest('/api/auth/verify-key', {
+        method: 'POST',
+        body: payload,
+        auth: false,
+        redirectOnUnauthorized: false,
+      })
+    },
+    activate(payload) {
+      return apiRequest('/api/auth/activate', {
+        method: 'POST',
+        body: payload,
+        auth: false,
+        redirectOnUnauthorized: false,
+      })
+    },
+    forgotPassword(payload) {
+      return apiRequest('/api/auth/forgot-password', {
+        method: 'POST',
+        body: payload,
+        auth: false,
+        redirectOnUnauthorized: false,
+      })
+    },
+    resetPassword(payload) {
+      return apiRequest('/api/auth/reset-password', {
+        method: 'POST',
+        body: payload,
+        auth: false,
+        redirectOnUnauthorized: false,
+      })
+    },
     me() {
       return apiRequest('/api/auth/me')
     },
+    profile() {
+      return apiRequest('/api/auth/profile')
+    },
+    async updateProfile(payload) {
+      const me = await apiRequest('/api/auth/profile', { method: 'PUT', body: payload })
+      const session = getSession()
+      if (session && me?.user) saveSession({ ...session, ...me })
+      return me
+    },
+    changePassword(payload) {
+      return apiRequest('/api/auth/profile/password', { method: 'PUT', body: payload })
+    },
     logout() {
       return apiRequest('/api/auth/logout', { method: 'POST' })
+    },
+  },
+  public: {
+    pilotInquiry(payload) {
+      return apiRequest('/api/public/pilot-inquiry', {
+        method: 'POST',
+        body: payload,
+        auth: false,
+        redirectOnUnauthorized: false,
+      })
     },
   },
   teacher: {
@@ -233,6 +338,36 @@ export const api = {
     student(studentId) {
       return apiRequest(`/api/teacher/students/${studentId}`)
     },
+    activities(query) {
+      return apiRequest('/api/teacher/activities', { query })
+    },
+    createActivity(payload) {
+      return apiRequest('/api/teacher/activities', { method: 'POST', body: payload })
+    },
+    updateActivity(activityId, payload) {
+      return apiRequest(`/api/teacher/activities/${activityId}`, {
+        method: 'PATCH',
+        body: payload,
+      })
+    },
+    publishActivity(activityId) {
+      return apiRequest(`/api/teacher/activities/${activityId}/publish`, { method: 'POST' })
+    },
+    settings() {
+      return apiRequest('/api/teacher/settings')
+    },
+    updateSettings(payload) {
+      return apiRequest('/api/teacher/settings', { method: 'PUT', body: payload })
+    },
+    exportCsv(query) {
+      return apiDownload('/api/teacher/reports/export-csv', { query })
+    },
+    exportPdf(query) {
+      return apiDownload('/api/teacher/reports/export-pdf', { query })
+    },
+    notifications() {
+      return apiRequest('/api/teacher/notifications')
+    },
   },
   student: {
     dashboard() {
@@ -240,6 +375,9 @@ export const api = {
     },
     progress() {
       return apiRequest('/api/student/progress')
+    },
+    history(search) {
+      return apiRequest('/api/student/progress/history', { query: { search } })
     },
     activities(category = 'all') {
       return apiRequest('/api/student/activities', { query: { category } })
@@ -259,6 +397,20 @@ export const api = {
         body: { answers },
         timeout: 30000,
       })
+    },
+    feedback(submissionId) {
+      return apiRequest(`/api/student/feedback/${submissionId}`)
+    },
+    retryFeedback(submissionId) {
+      return apiRequest(`/api/student/feedback/${submissionId}/retry`, { method: 'POST' })
+    },
+    practiceDrill(submissionId) {
+      return apiRequest(`/api/student/feedback/${submissionId}/practice-drill`, {
+        method: 'POST',
+      })
+    },
+    notifications() {
+      return apiRequest('/api/student/notifications')
     },
   },
 }

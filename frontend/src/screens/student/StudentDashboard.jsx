@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import BrandLogo from '../../components/BrandLogo'
-import { api, getStoredUser } from '../../api/client'
+import NotificationBell from '../../components/NotificationBell'
+import { api, getStoredUser, logout } from '../../api/client'
 import { useApiResource } from '../../api/useApiResource'
 import { DataError, EmptyBlock, LoadingBlock } from '../../components/DataState'
 
@@ -100,7 +101,7 @@ export default function StudentDashboard() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(91,75,219,0.06)]">
         <div className="h-20 max-w-[1120px] mx-auto px-gutter flex items-center justify-between gap-space-md">
           <div className="flex items-center gap-space-lg">
-            <BrandLogo to="/" />
+            <BrandLogo to="/student/dashboard" />
             <nav
               className="hidden xl:flex items-center gap-space-xs"
               data-active-classes="bg-primary-container text-on-primary font-label-lg text-label-lg rounded-full px-space-md py-space-xs shadow-[0_2px_8px_rgba(91,75,219,0.15)]"
@@ -159,15 +160,15 @@ export default function StudentDashboard() {
               <span className="material-symbols-outlined text-[18px] text-secondary">bolt</span>
               <span className="font-label-md text-label-md font-bold text-secondary">320 XP</span>
             </div>
-            <button
-              aria-label="Notifications"
-              className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors relative"
-              type="button"
+            <NotificationBell
+              role="student"
+              buttonClassName="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors"
+            />
+            <Link
+              className="flex items-center gap-space-sm pl-space-xs"
+              title="View profile"
+              to="/profile"
             >
-              <span className="material-symbols-outlined text-[20px]">notifications</span>
-              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-error"></span>
-            </button>
-            <div className="flex items-center gap-space-sm pl-space-xs">
               <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary">
                 <span className="material-symbols-outlined text-on-primary text-[18px]">person</span>
               </div>
@@ -179,7 +180,18 @@ export default function StudentDashboard() {
                   Python &amp; CS Track
                 </span>
               </div>
-            </div>
+            </Link>
+            <button
+              className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-error hover:bg-error-container transition-colors"
+              onClick={async () => {
+                await logout()
+                window.location.assign('/login')
+              }}
+              title="Sign out"
+              type="button"
+            >
+              <span className="material-symbols-outlined text-[20px]">logout</span>
+            </button>
           </div>
         </div>
         {/* Mobile nav dropdown */}

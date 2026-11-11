@@ -1,5 +1,5 @@
--- Development-only demo data. Applied only by the dev profile because application-dev.yml
--- adds classpath:db/seed to the Flyway locations. Never include this location in production.
+-- Development-only demo data. Applied only by the opt-in `seed` profile because
+-- application-seed.yml adds classpath:db/seed to the Flyway locations.
 --
 -- Seeded credentials (match SETUP.md):
 --   teacher  maria.santos@university.edu.ph / t2024-0104 / teacher123

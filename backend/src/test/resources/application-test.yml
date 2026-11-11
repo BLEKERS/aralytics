@@ -33,8 +33,6 @@ aralytics:
     secret: integration-test-secret-integration-test-secret-0123456789
     expiration-minutes: 60
   activation:
-    student-key: KEY-8821-PY
-    teacher-key: FAC-2025-DEPED
     token-ttl-minutes: 15
   intervention:
     threshold: 70

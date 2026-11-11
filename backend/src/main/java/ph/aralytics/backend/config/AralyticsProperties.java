@@ -6,7 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * Application configuration. Secrets are supplied through environment variables in
- * application.yml (JWT_SECRET, ACTIVATION_STUDENT_KEY, ACTIVATION_TEACHER_KEY, ...).
+ * application.yml (JWT_SECRET, ...); activation keys are stored per school in the database.
  */
 @ConfigurationProperties(prefix = "aralytics")
 public record AralyticsProperties(
@@ -18,7 +18,7 @@ public record AralyticsProperties(
     public record Jwt(String secret, long expirationMinutes) {
     }
 
-    public record Activation(String studentKey, String teacherKey, long tokenTtlMinutes) {
+    public record Activation(long tokenTtlMinutes) {
     }
 
     public record Intervention(int threshold) {

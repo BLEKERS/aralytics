@@ -209,9 +209,9 @@ export default function LoginScreen() {
                     <label className="font-label-lg text-[15px] font-semibold text-on-surface" htmlFor="password-input">
                       Password
                     </label>
-                    <a className="font-label-md text-[13px] text-primary hover:text-on-primary-fixed-variant transition-colors font-medium" href="#">
+                    <Link className="font-label-md text-[13px] text-primary hover:text-on-primary-fixed-variant transition-colors font-medium" to="/forgot-password">
                       Forgot password?
-                    </a>
+                    </Link>
                   </div>
                   <div className="relative flex items-center">
                     <span className="material-symbols-outlined text-outline absolute left-3.5 pointer-events-none text-[22px]">lock</span>

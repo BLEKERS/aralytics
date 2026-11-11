@@ -25,4 +25,12 @@ public final class CommonDtos {
 
     public record MessageResponse(String message) {
     }
+
+    public record NotificationView(
+            Long id,
+            String message,
+            boolean isRead,
+            OffsetDateTime scheduledAt,
+            OffsetDateTime sentAt) {
+    }
 }

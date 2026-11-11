@@ -31,7 +31,7 @@ export default function Sidebar({ open = false, onClose }) {
     >
       <div className="flex flex-col">
         <div className="h-[72px] flex items-center px-space-lg gap-space-sm">
-          <BrandLogo to="/" />
+          <BrandLogo to="/teacher/dashboard" />
         </div>
         <nav className="flex flex-col gap-space-xs px-space-md mt-space-sm">
           {NAV_ITEMS.map((item) => (
@@ -54,7 +54,7 @@ export default function Sidebar({ open = false, onClose }) {
         </nav>
       </div>
       <div className="p-space-md m-space-md rounded-xl bg-surface-container-low flex items-center justify-between">
-        <div className="flex items-center gap-space-sm min-w-0">
+        <Link className="flex items-center gap-space-sm min-w-0" title="View profile" to="/profile">
           <img
             alt="Profile"
             className="w-8 h-8 rounded-full object-cover shrink-0"
@@ -69,7 +69,7 @@ export default function Sidebar({ open = false, onClose }) {
               High School CS
             </span>
           </div>
-        </div>
+        </Link>
         <Link
           className="text-on-surface-variant hover:text-primary transition-colors p-space-xs"
           onClick={handleLogout}

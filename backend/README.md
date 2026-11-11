@@ -26,9 +26,10 @@ backend/
 │   ├── service/       # Auth, quiz authoring/taking, submissions, diagnostics, dashboards
 │   └── web/           # auth, public, student, teacher controllers + DTOs
 ├── src/main/resources/
-│   ├── application.yml, application-dev.yml, application-prod.yml
-│   └── db/migration/V1__init.sql     # ERD schema (Flyway)
-│   └── db/seed/V2__seed_dev.sql      # demo data, loaded only by the dev profile
+│   ├── application.yml, application-dev.yml, application-prod.yml, application-seed.yml
+│   ├── db/migration/V1__init.sql     # ERD schema (Flyway)
+│   ├── db/migration/V3__school_activation_keys.sql  # per-school key hashes
+│   └── db/seed/V2__seed_dev.sql      # demo data, loaded only by the `seed` profile
 └── src/test/          # H2-backed MockMvc ITs + Docker-gated MySQL migration IT
 ```
 
@@ -43,7 +44,9 @@ docker compose up --build
 ```
 
 The API listens on `http://localhost:8080`; MySQL is exposed on `localhost:3306`. Compose starts
-the app with `SPRING_PROFILES_ACTIVE=dev`, so the demo seed and Swagger UI are available.
+the app with the `prod` profile by default and refuses to start without `JWT_SECRET`. For a local
+demo, set `SPRING_PROFILES_ACTIVE=dev,seed` and a real `JWT_SECRET` in `.env`; `dev` adds Swagger UI
+and `seed` adds the demo rows.
 
 ### Option B — Local Maven + local MySQL
 
@@ -55,12 +58,12 @@ the app with `SPRING_PROFILES_ACTIVE=dev`, so the demo seed and Swagger UI are a
    GRANT ALL PRIVILEGES ON aralytics.* TO 'aralytics'@'%';
    ```
 
-2. Run the app with the dev profile (schema + demo seed + Swagger):
+2. Run the app with the dev and seed profiles (schema + demo data + Swagger):
 
    ```powershell
    cd backend
    $env:JAVA_HOME="C:\Program Files\Java\jdk-21"   # or any JDK 21+
-   .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"
+   .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev,seed"
    ```
 
    Dev-only URLs:
@@ -68,8 +71,8 @@ the app with `SPRING_PROFILES_ACTIVE=dev`, so the demo seed and Swagger UI are a
    - OpenAPI JSON: <http://localhost:8080/v3/api-docs>
    - Health: <http://localhost:8080/actuator/health>
 
-3. Stop with `Ctrl+C`. Flyway applies `V1__init.sql` (and `V2__seed_dev.sql` only under `dev`)
-   on startup; with `prod` the seed is never loaded.
+3. Stop with `Ctrl+C`. Flyway applies `V1__init.sql` and `V3__school_activation_keys.sql` on
+   startup; demo rows run only under the `seed` profile. With `prod` no demo rows are loaded.
 
 ### Demo credentials (dev seed)
 
@@ -79,8 +82,8 @@ the app with `SPRING_PROFILES_ACTIVE=dev`, so the demo seed and Swagger UI are a
 | Student | `miguel@school.edu.ph` or `s2024-9102` | `student123` |
 
 Institution code `STJUDE-MNL-2025`; issued keys `FAC-2025-DEPED` (teacher) and
-`KEY-8821-PY` (student). These values exist only in the dev seed — never reuse them in a real
-deployment.
+`KEY-8821-PY` (student). These are hashed per school in the `SCHOOL` table by the dev seed — never
+reuse them in a real deployment.
 
 ## Configuration
 
@@ -92,20 +95,20 @@ All runtime configuration is environment-overridable (see `.env.example`):
 | `DB_URL` | `jdbc:mysql://localhost:3306/aralytics?...` | JDBC URL |
 | `DB_USERNAME` / `DB_PASSWORD` | `aralytics` / `aralytics` | Database credentials |
 | `DB_POOL_SIZE` | `10` | Hikari maximum pool size |
-| `JWT_SECRET` | dev-only placeholder | HS256 signing key, **≥ 32 bytes**; override in every deployment |
+| `JWT_SECRET` | dev-only placeholder | HS256 signing key, **≥ 32 bytes**; `prod` refuses the placeholder |
 | `JWT_EXPIRATION_MINUTES` | `120` | Token lifetime |
-| `ACTIVATION_STUDENT_KEY` / `ACTIVATION_TEACHER_KEY` | demo keys | Issued access keys checked by `verify-key` |
 | `ACTIVATION_TOKEN_TTL_MINUTES` | `15` | Single-use activation-token lifetime |
 | `INTERVENTION_THRESHOLD` | `70` | Mastery percentage below which a student is flagged |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:5173` | Allowed browser origins |
-| `SPRING_PROFILES_ACTIVE` | _(none)_ | `dev` adds seed + Swagger; `prod` disables both; `ai` enables the LLM adapter |
+| `SPRING_PROFILES_ACTIVE` | _(none)_ | `dev` adds Swagger; `seed` adds demo rows (refused in `prod`); `prod` is schema-only; `ai` enables the LLM adapter |
 | `AI_BASE_URL` | _(empty)_ | Base URL for the `ai` profile adapter; empty or failure falls back to the mock engine |
 
 Profiles:
 
 - **default** — migrations only, Swagger disabled, mock diagnostic engine.
-- **dev** — migrations + demo seed, Swagger UI, debug logging for `ph.aralytics.backend`.
-- **prod** — migrations only, Swagger disabled, INFO logging.
+- **dev** — migrations + Swagger UI, debug logging for `ph.aralytics.backend`.
+- **seed** — adds the demo rows; used as `dev,seed` locally and refused in `prod`.
+- **prod** — migrations only, Swagger disabled, INFO logging, rejects the default JWT secret.
 - **ai** — swaps in `LlmDiagnosticEngine`, which POSTs the scored request to
   `${AI_BASE_URL}/diagnose` and falls back to the mock engine on timeout/failure. No real
   model is wired yet.

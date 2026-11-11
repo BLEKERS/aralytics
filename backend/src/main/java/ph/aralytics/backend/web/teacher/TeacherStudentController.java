@@ -32,7 +32,7 @@ public class TeacherStudentController {
     @GetMapping
     @PreAuthorize("hasRole('TEACHER')")
     @Operation(summary = "Paginated mastery roster for the teacher's own students",
-            description = "search matches name/email/username; topic filters by concept; status=below|above.")
+            description = "search matches name/email/username; topic filters by concept; status=needs-help|needs-nudge|on-track|high|practice|struggling.")
     public CommonDtos.PageResponse<TeacherDtos.RosterItem> roster(
             @AuthenticationPrincipal AuthenticatedPrincipal principal,
             @RequestParam(required = false) String search,

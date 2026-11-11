@@ -1,39 +1,44 @@
 package ph.aralytics.backend.web.teacher;
 
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import ph.aralytics.backend.exception.NotImplementedException;
+import jakarta.validation.Valid;
+import ph.aralytics.backend.security.AuthenticatedPrincipal;
+import ph.aralytics.backend.service.TeacherSettingsService;
+import ph.aralytics.backend.web.dto.TeacherDtos;
 
-/**
- * Settings persistence is explicitly out of scope for the 40% milestone: the ERD has no
- * settings table and the product has not decided which settings are teacher- vs
- * school-controlled (PRD open question 5). The endpoints return 501 so the frontend can
- * distinguish "not built yet" from a silent failure.
- */
 @RestController
 @RequestMapping("/api/teacher/settings")
-@Tag(name = "Teacher", description = "Teacher portal: activities, dashboard, roster, and deferred settings")
+@Tag(name = "Teacher", description = "Teacher portal: activities, dashboard, roster, reports, and settings")
 public class TeacherSettingsController {
+
+    private final TeacherSettingsService settingsService;
+
+    public TeacherSettingsController(TeacherSettingsService settingsService) {
+        this.settingsService = settingsService;
+    }
 
     @GetMapping
     @PreAuthorize("hasRole('TEACHER')")
-    @Operation(summary = "Read classroom settings (not implemented in the 40% milestone)")
-    public void settings() {
-        throw new NotImplementedException(
-                "Settings persistence is deferred beyond the 40% milestone; no settings table exists yet.");
+    @Operation(summary = "Read the teacher's classroom settings (creates defaults on first read)")
+    public TeacherDtos.TeacherSettingsResponse settings(@AuthenticationPrincipal AuthenticatedPrincipal principal) {
+        return settingsService.get(principal.userId());
     }
 
     @PutMapping
     @PreAuthorize("hasRole('TEACHER')")
-    @Operation(summary = "Update classroom settings (not implemented in the 40% milestone)")
-    public void updateSettings() {
-        throw new NotImplementedException(
-                "Settings persistence is deferred beyond the 40% milestone; no settings table exists yet.");
+    @Operation(summary = "Update the intervention threshold and feedback tone")
+    public TeacherDtos.TeacherSettingsResponse updateSettings(
+            @AuthenticationPrincipal AuthenticatedPrincipal principal,
+            @Valid @RequestBody TeacherDtos.UpdateTeacherSettingsRequest request) {
+        return settingsService.update(principal.userId(), request);
     }
 }

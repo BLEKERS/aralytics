@@ -5,6 +5,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -77,6 +78,12 @@ public final class TeacherDtos {
             BigDecimal completionRate,
             int belowThresholdCount,
             int threshold,
+            int highMasteryCount,
+            int practiceCount,
+            int strugglingCount,
+            int onTrackCount,
+            int needsNudgeCount,
+            int activeStudentCount,
             List<StudentPerformance> belowThreshold,
             List<CommonDtos.ConceptMastery> classConceptMastery) {
     }
@@ -98,5 +105,18 @@ public final class TeacherDtos {
             BigDecimal averageScore,
             List<CommonDtos.ConceptMastery> mastery,
             List<StudentDtos.FeedbackView> feedback) {
+    }
+
+    public record TeacherSettingsResponse(
+            int interventionThreshold,
+            String feedbackTone) {
+    }
+
+    public record UpdateTeacherSettingsRequest(
+            @NotNull(message = "interventionThreshold is required")
+            @Min(value = 0, message = "interventionThreshold must be between 0 and 100")
+            @Max(value = 100, message = "interventionThreshold must be between 0 and 100")
+            Integer interventionThreshold,
+            @NotBlank(message = "feedbackTone is required") String feedbackTone) {
     }
 }

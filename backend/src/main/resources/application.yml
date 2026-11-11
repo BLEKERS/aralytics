@@ -63,9 +63,10 @@ aralytics:
     secret: ${JWT_SECRET:dev-only-secret-change-me-in-production-please-0123456789}
     expiration-minutes: ${JWT_EXPIRATION_MINUTES:120}
   activation:
-    student-key: ${ACTIVATION_STUDENT_KEY:KEY-8821-PY}
-    teacher-key: ${ACTIVATION_TEACHER_KEY:FAC-2025-DEPED}
     token-ttl-minutes: ${ACTIVATION_TOKEN_TTL_MINUTES:15}
+  password-reset:
+    token-ttl-minutes: ${PASSWORD_RESET_TTL_MINUTES:15}
+    frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
   intervention:
     threshold: ${INTERVENTION_THRESHOLD:70}
   cors:

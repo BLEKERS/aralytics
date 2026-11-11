@@ -35,6 +35,12 @@ public class School {
     @Column(nullable = false, unique = true, length = 64)
     private String institutionCode;
 
+    @Column(length = 64)
+    private String studentActivationKeyHash;
+
+    @Column(length = 64)
+    private String teacherActivationKeyHash;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subscriptionId")
     private Subscription subscription;
@@ -77,6 +83,22 @@ public class School {
 
     public void setInstitutionCode(String institutionCode) {
         this.institutionCode = institutionCode;
+    }
+
+    public String getStudentActivationKeyHash() {
+        return studentActivationKeyHash;
+    }
+
+    public void setStudentActivationKeyHash(String studentActivationKeyHash) {
+        this.studentActivationKeyHash = studentActivationKeyHash;
+    }
+
+    public String getTeacherActivationKeyHash() {
+        return teacherActivationKeyHash;
+    }
+
+    public void setTeacherActivationKeyHash(String teacherActivationKeyHash) {
+        this.teacherActivationKeyHash = teacherActivationKeyHash;
     }
 
     public Subscription getSubscription() {

@@ -20,12 +20,15 @@ public class SubmissionService {
     private final SubmissionPersistenceService persistenceService;
     private final DiagnosticService diagnosticService;
     private final QuizDraftStore draftStore;
+    private final NotificationService notificationService;
 
     public SubmissionService(SubmissionPersistenceService persistenceService,
-            DiagnosticService diagnosticService, QuizDraftStore draftStore) {
+            DiagnosticService diagnosticService, QuizDraftStore draftStore,
+            NotificationService notificationService) {
         this.persistenceService = persistenceService;
         this.diagnosticService = diagnosticService;
         this.draftStore = draftStore;
+        this.notificationService = notificationService;
     }
 
     public StudentDtos.SubmitResponse submit(Long studentId, Long quizId, StudentDtos.SubmitRequest request) {
@@ -56,6 +59,14 @@ public class SubmissionService {
                     outcome.submissionId(), exception.getMessage());
         }
         draftStore.clear(studentId, quizId);
+
+        try {
+            notificationService.submissionReceived(outcome.submissionId());
+        } catch (Exception exception) {
+            // Notification delivery must never fail the student's submission.
+            log.warn("Notification delivery failed for submission {}: {}",
+                    outcome.submissionId(), exception.getMessage());
+        }
 
         return new StudentDtos.SubmitResponse(
                 outcome.submissionId(),

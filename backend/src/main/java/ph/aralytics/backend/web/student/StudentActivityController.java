@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import ph.aralytics.backend.security.AuthenticatedPrincipal;
 import ph.aralytics.backend.service.DashboardService;
+import ph.aralytics.backend.service.FeedbackService;
 import ph.aralytics.backend.service.QuizService;
 import ph.aralytics.backend.service.SubmissionService;
 import ph.aralytics.backend.web.dto.StudentDtos;
@@ -29,12 +30,14 @@ public class StudentActivityController {
     private final DashboardService dashboardService;
     private final QuizService quizService;
     private final SubmissionService submissionService;
+    private final FeedbackService feedbackService;
 
     public StudentActivityController(DashboardService dashboardService, QuizService quizService,
-            SubmissionService submissionService) {
+            SubmissionService submissionService, FeedbackService feedbackService) {
         this.dashboardService = dashboardService;
         this.quizService = quizService;
         this.submissionService = submissionService;
+        this.feedbackService = feedbackService;
     }
 
     @GetMapping("/dashboard")
@@ -49,6 +52,15 @@ public class StudentActivityController {
     @Operation(summary = "Concept mastery for the authenticated student")
     public StudentDtos.ProgressResponse progress(@AuthenticationPrincipal AuthenticatedPrincipal principal) {
         return dashboardService.studentProgress(principal.userId());
+    }
+
+    @GetMapping("/progress/history")
+    @PreAuthorize("hasRole('STUDENT')")
+    @Operation(summary = "Past submissions with feedback status, searchable by quiz title")
+    public StudentDtos.FeedbackHistoryResponse history(
+            @AuthenticationPrincipal AuthenticatedPrincipal principal,
+            @RequestParam(required = false) String search) {
+        return feedbackService.history(principal.userId(), search);
     }
 
     @GetMapping("/activities")

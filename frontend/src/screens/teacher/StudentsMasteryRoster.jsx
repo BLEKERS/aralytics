@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { api, getStoredClasses } from '../../api/client'
+import { api, getStoredClasses, saveBlob } from '../../api/client'
 import { useApiResource } from '../../api/useApiResource'
 import { DataError, EmptyBlock, LoadingBlock } from '../../components/DataState'
 
@@ -119,7 +119,17 @@ export default function StudentsMasteryRoster() {
   const [toast, setToast] = useState(null)
   const toastTimer = useRef(null)
 
-  const roster = useApiResource(() => api.teacher.students({ page: 1, size: 100 }), [])
+  const roster = useApiResource(
+    () =>
+      api.teacher.students({
+        search: query.trim() || undefined,
+        topic: subject === 'all' ? undefined : subject,
+        status: activeFilter === 'all' ? undefined : activeFilter,
+        page,
+        size: ROSTER_PAGE_SIZE,
+      }),
+    [query, subject, activeFilter, page]
+  )
   const dashboard = useApiResource(() => api.teacher.dashboard(), [])
   const threshold = dashboard.data?.threshold ?? DEFAULT_THRESHOLD
   const classLabel = getStoredClasses()[0]?.name || 'CS 101: Intro to Python (Section A)'
@@ -129,40 +139,28 @@ export default function StudentsMasteryRoster() {
   )
 
   const conceptOptions = Array.from(
-    new Set(students.flatMap((student) => student.mastery.map((entry) => entry.concept)))
+    new Set(
+      (Array.isArray(dashboard.data?.classConceptMastery)
+        ? dashboard.data.classConceptMastery
+        : []
+      ).map((entry) => entry.concept)
+    )
   ).sort()
 
-  const counts = students.reduce(
-    (totals, student) => {
-      totals.all += 1
-      totals[student.status] += 1
-      return totals
-    },
-    { all: 0, high: 0, practice: 0, struggling: 0 }
-  )
+  // Cohort-wide counts from the dashboard aggregate; the roster itself is paginated.
+  const counts = {
+    all: dashboard.data?.studentCount ?? 0,
+    high: dashboard.data?.highMasteryCount ?? 0,
+    practice: dashboard.data?.practiceCount ?? 0,
+    struggling: dashboard.data?.strugglingCount ?? 0,
+  }
 
-  const normalizedQuery = query.trim().toLowerCase()
-  const filteredStudents = students.filter((student) => {
-    const matchesQuery =
-      normalizedQuery === '' ||
-      [student.fullName, student.username, student.email, `STU-${student.studentId}`]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(normalizedQuery)) ||
-      student.mastery.some((entry) => entry.concept.toLowerCase().includes(normalizedQuery))
-    const matchesStatus = activeFilter === 'all' || student.status === activeFilter
-    const matchesTopic =
-      subject === 'all' || student.mastery.some((entry) => entry.concept === subject)
-    return matchesQuery && matchesStatus && matchesTopic
-  })
-
-  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / ROSTER_PAGE_SIZE))
+  const totalStudents = roster.data?.totalItems ?? 0
+  const totalPages = Math.max(1, roster.data?.totalPages ?? 1)
   const currentPage = Math.min(page, totalPages)
-  const pagedStudents = filteredStudents.slice(
-    (currentPage - 1) * ROSTER_PAGE_SIZE,
-    currentPage * ROSTER_PAGE_SIZE
-  )
-  const showingFrom = filteredStudents.length === 0 ? 0 : (currentPage - 1) * ROSTER_PAGE_SIZE + 1
-  const showingTo = Math.min(currentPage * ROSTER_PAGE_SIZE, filteredStudents.length)
+  const pagedStudents = students
+  const showingFrom = totalStudents === 0 ? 0 : (currentPage - 1) * ROSTER_PAGE_SIZE + 1
+  const showingTo = Math.min(currentPage * ROSTER_PAGE_SIZE, totalStudents)
   const pageNumbers = []
   const firstPageInWindow = Math.max(1, Math.min(currentPage - 1, totalPages - 2))
   for (let index = firstPageInWindow; index <= Math.min(totalPages, firstPageInWindow + 2); index += 1) {
@@ -214,8 +212,8 @@ export default function StudentsMasteryRoster() {
       )} questions)`
     : 'Assign a diagnostic quiz to collect mastery data'
 
-  const activeLearners = students.filter((student) => student.completedCount > 0).length
-  const activePercent = students.length ? Math.round((activeLearners / students.length) * 100) : 0
+  const activeLearners = dashboard.data?.activeStudentCount ?? 0
+  const activePercent = counts.all ? Math.round((activeLearners / counts.all) * 100) : 0
 
   function notify(message) {
     setToast(message)
@@ -223,34 +221,20 @@ export default function StudentsMasteryRoster() {
     toastTimer.current = setTimeout(() => setToast(null), 3500)
   }
 
-  function handleExportCsv() {
-    if (filteredStudents.length === 0) {
+  async function handleExportCsv() {
+    if (students.length === 0) {
       notify('There are no learner rows to export yet.')
       return
     }
-    const header = ['Student ID', 'Name', 'Email', 'Username', 'Average Score', 'Completed', 'Below Threshold', 'Mastery']
-    const rows = filteredStudents.map((student) => [
-      `STU-${student.studentId}`,
-      student.fullName,
-      student.email,
-      student.username,
-      student.score,
-      student.completedCount,
-      student.belowThreshold ? 'yes' : 'no',
-      student.mastery.map((entry) => `${entry.concept}: ${entry.pct}%`).join('; '),
-    ])
-    const escape = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`
-    const csv = [header, ...rows].map((row) => row.map(escape).join(',')).join('\r\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const anchor = document.createElement('a')
-    anchor.href = url
-    anchor.download = 'aralytics-student-masterlist.csv'
-    document.body.appendChild(anchor)
-    anchor.click()
-    document.body.removeChild(anchor)
-    URL.revokeObjectURL(url)
-    notify(`Exported ${filteredStudents.length} learner rows to CSV.`)
+    try {
+      const { blob, filename } = await api.teacher.exportCsv({
+        topic: subject === 'all' ? undefined : subject,
+      })
+      saveBlob(blob, filename || 'aralytics-student-masterlist.csv')
+      notify(`Exported ${totalStudents} learner rows from the backend.`)
+    } catch (error) {
+      notify(error.message || 'Could not export the masterlist.')
+    }
   }
 
   return (
@@ -529,7 +513,7 @@ export default function StudentsMasteryRoster() {
                             ? 'Loading learners from the backend…'
                             : roster.error
                               ? 'Learner data is unavailable. Check that the backend is running, then retry.'
-                              : students.length === 0
+                              : counts.all === 0
                                 ? 'No learners are enrolled in this cohort yet.'
                                 : 'No learners match this filter or search.'}
                         </td>
@@ -541,7 +525,7 @@ export default function StudentsMasteryRoster() {
               {/* Pagination / Masterlist Summary Bar */}
               <div className="p-space-md bg-surface-container-low flex flex-col sm:flex-row items-center justify-between gap-space-sm text-on-surface-variant font-body-sm text-body-sm">
                 <div className="flex items-center gap-space-sm">
-                  <span className="">Showing <strong className="text-on-surface">{filteredStudents.length ? `${showingFrom} - ${showingTo}` : '0'}</strong> of {filteredStudents.length} students</span>
+                  <span className="">Showing <strong className="text-on-surface">{totalStudents ? `${showingFrom} - ${showingTo}` : '0'}</strong> of {totalStudents} students</span>
                   <span className="text-outline-variant">·</span>
                   <span className="text-xs">{counts.struggling} learners below the {threshold}% intervention threshold</span>
                 </div>
@@ -665,7 +649,7 @@ export default function StudentsMasteryRoster() {
                   <span className="material-symbols-outlined text-[18px] text-secondary">checklist</span>
                   Remediation Activity (Current Cycle)
                 </h4>
-                <span className="font-label-sm text-label-sm text-on-surface-variant">{activeLearners} / {students.length} Active</span>
+                <span className="font-label-sm text-label-sm text-on-surface-variant">{activeLearners} / {counts.all} Active</span>
               </div>
               <div className="w-full bg-surface-container h-2 rounded-full overflow-hidden">
                 <div className="bg-secondary h-full rounded-full" style={{ width: `${activePercent}%` }}></div>

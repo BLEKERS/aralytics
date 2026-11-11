@@ -7,6 +7,8 @@ import TopBar from './components/layout/TopBar'
 import LandingPage from './screens/public/LandingPage'
 import LoginScreen from './screens/public/LoginScreen'
 import AccountActivationScreen from './screens/public/AccountActivationScreen'
+import ForgotPasswordScreen from './screens/public/ForgotPasswordScreen'
+import ResetPasswordScreen from './screens/public/ResetPasswordScreen'
 // Student view (/student/*) — each screen renders its own header from its Stitch export
 import StudentDashboard from './screens/student/StudentDashboard'
 import StudentMyActivities from './screens/student/StudentMyActivities'
@@ -19,6 +21,8 @@ import StudentsMasteryRoster from './screens/teacher/StudentsMasteryRoster'
 import ActivitiesQuizManagement from './screens/teacher/ActivitiesQuizManagement'
 import ClassReportsLearningAnalytics from './screens/teacher/ClassReportsLearningAnalytics'
 import TeacherClassroomSettings from './screens/teacher/TeacherClassroomSettings'
+// Shared
+import ProfileScreen from './screens/shared/ProfileScreen'
 
 function RequireAuth({ role, children }) {
   const location = useLocation()
@@ -44,7 +48,9 @@ function RequireAuth({ role, children }) {
 function AppShell({ children }) {
   const [navOpen, setNavOpen] = useState(false)
   const { pathname } = useLocation()
-  const inTeacherApp = pathname.startsWith('/teacher/')
+  const inTeacherApp =
+    pathname.startsWith('/teacher/') ||
+    (pathname === '/profile' && getSession()?.user?.role === 'TEACHER')
 
   if (!inTeacherApp) return children
 
@@ -74,6 +80,8 @@ export default function App() {
           <Route element={<LandingPage />} index path="/" />
           <Route element={<LoginScreen />} path="/login" />
           <Route element={<AccountActivationScreen />} path="/register" />
+          <Route element={<ForgotPasswordScreen />} path="/forgot-password" />
+          <Route element={<ResetPasswordScreen />} path="/reset-password" />
           <Route element={<Navigate replace to="/register" />} path="/activate" />
 
           {/* Student view */}
@@ -93,6 +101,9 @@ export default function App() {
           <Route element={<RequireAuth role="TEACHER"><ClassReportsLearningAnalytics /></RequireAuth>} path="/teacher/reports" />
           <Route element={<RequireAuth role="TEACHER"><TeacherClassroomSettings /></RequireAuth>} path="/teacher/settings" />
           <Route element={<Navigate replace to="/teacher/dashboard" />} path="/teacher" />
+
+          {/* Shared authenticated pages */}
+          <Route element={<RequireAuth><ProfileScreen /></RequireAuth>} path="/profile" />
 
           {/* Legacy flat teacher paths */}
           <Route element={<Navigate replace to="/teacher/dashboard" />} path="/dashboard" />

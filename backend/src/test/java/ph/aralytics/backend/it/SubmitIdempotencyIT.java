@@ -1,9 +1,12 @@
 package ph.aralytics.backend.it;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
@@ -11,6 +14,8 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import ph.aralytics.backend.domain.Quiz;
+import ph.aralytics.backend.repository.QuizRepository;
 import ph.aralytics.backend.support.AbstractApiIT;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,6 +25,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 class SubmitIdempotencyIT extends AbstractApiIT {
+
+    @Autowired
+    private QuizRepository quizRepository;
 
     @Test
     void secondSubmissionReturnsConflict() throws Exception {
@@ -115,6 +123,26 @@ class SubmitIdempotencyIT extends AbstractApiIT {
                 .content(json(Map.of("answers", List.of(
                         Map.of("questionId", 1, "selectedOption", "A"))))))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void submissionAfterDueDateIsRejected() throws Exception {
+        String teacherToken = login("maria.santos@university.edu.ph", "teacher123");
+        String studentToken = login("miguel@school.edu.ph", "student123");
+        long activityId = Long.parseLong(createPublishedActivity(teacherToken,
+                "Closed " + java.util.UUID.randomUUID(), 1, "Loops"));
+        long questionId = questionIdOf(studentToken, activityId);
+
+        Quiz quiz = quizRepository.findById(activityId).orElseThrow();
+        quiz.setDueDate(OffsetDateTime.now(ZoneOffset.UTC).minusMinutes(1));
+        quizRepository.saveAndFlush(quiz);
+
+        mockMvc.perform(post("/api/student/quiz/" + activityId + "/submit")
+                .header(HttpHeaders.AUTHORIZATION, bearer(studentToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("answers", List.of(
+                        Map.of("questionId", questionId, "selectedOption", "A"))))))
+                .andExpect(status().isBadRequest());
     }
 
     private long questionIdOf(String studentToken, long activityId) throws Exception {

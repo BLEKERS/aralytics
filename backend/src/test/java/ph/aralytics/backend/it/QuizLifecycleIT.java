@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
@@ -12,6 +13,8 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import ph.aralytics.backend.repository.QuizDraftRepository;
+import ph.aralytics.backend.repository.UserRepository;
 import ph.aralytics.backend.support.AbstractApiIT;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -22,6 +25,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 class QuizLifecycleIT extends AbstractApiIT {
+
+    @Autowired
+    private QuizDraftRepository quizDraftRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Test
     void teacherAuthorsPublishesAndStudentCompletesActivity() throws Exception {
@@ -117,6 +126,8 @@ class QuizLifecycleIT extends AbstractApiIT {
         assertThat(submitted.path("feedback").path("content").asText())
                 .doesNotContain("Three iterations");
         long submissionId = submitted.path("submissionId").asLong();
+        Long studentId = userRepository.findByEmailIgnoreCase("miguel@school.edu.ph").orElseThrow().getId();
+        assertThat(quizDraftRepository.findByStudentIdAndQuizId(studentId, activityId)).isEmpty();
 
         mockMvc.perform(get("/api/student/feedback/" + submissionId)
                 .header(HttpHeaders.AUTHORIZATION, bearer(studentToken)))

@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom'
+import NotificationBell from '../NotificationBell'
+import { logout } from '../../api/client'
 
 const PROFILE_URL =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuChrfifem-pX-5-2ww20HzrO-M3nr7zLtmPi9Ix5-PCHl7pi5uQZlXPj6xHOAyG6JWBzxOozhXH5fuP6gRofSlFOKpUzMOpRg73l4PI5TaIX7ObErToVfnbzhJy2ghX0wDrjK6Lj3QfAiVzzaEcBSb7jWbHlaU0lIU4nC-1cCexq0ACsLAItVy1LwoUNeA06eShYWT0UaFkkl2Fbh-zjihrqjqhdUFLP2Zuz78Kyv-Wx6wEB5ZpfYTQrQ'
@@ -41,14 +43,7 @@ export default function TopBar({ onMenu }) {
           </div>
         </div>
         <div className="flex items-center gap-space-md">
-          <button
-            className="relative p-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors"
-            title="Notifications"
-            type="button"
-          >
-            <span className="material-symbols-outlined text-[22px]">notifications</span>
-            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-error ring-2 ring-surface-container-lowest"></span>
-          </button>
+          <NotificationBell role="teacher" />
           <Link
             className="flex items-center gap-space-xs bg-primary-container text-on-primary px-space-md py-2 rounded-xl font-label-md text-label-md hover:bg-primary transition-colors shadow-sm"
             to="/teacher/activities"
@@ -57,14 +52,25 @@ export default function TopBar({ onMenu }) {
             <span className="hidden md:inline">New Activity</span>
             <span className="md:hidden">Add</span>
           </Link>
-          <div className="flex items-center pl-space-xs">
+          <Link className="flex items-center pl-space-xs" title="View profile" to="/profile">
             <img
               alt="Profile"
               className="w-8 h-8 rounded-full object-cover ring-2 ring-primary-container/20"
               src={PROFILE_URL}
               onError={(e) => (e.currentTarget.style.visibility = 'hidden')}
             />
-          </div>
+          </Link>
+          <button
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-on-surface-variant hover:text-error hover:bg-error-container transition-all"
+            onClick={async () => {
+              await logout()
+              window.location.assign('/login')
+            }}
+            title="Sign out"
+            type="button"
+          >
+            <span className="material-symbols-outlined text-[20px]">logout</span>
+          </button>
         </div>
       </div>
     </header>
