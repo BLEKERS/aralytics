@@ -20,9 +20,7 @@ dist-ssr
 /screens/
 /fetch-screens.mjs
 
-# Local-only helper scripts (environment-specific paths and credentials)
-run-app.bat
-check-env.ps1
+graphify-out/
 
 # Editor directories and files
 .vscode/*
