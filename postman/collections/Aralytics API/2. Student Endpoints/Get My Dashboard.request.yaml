@@ -1,0 +1,15 @@
+$kind: http-request
+url: "{{baseUrl}}/api/student/dashboard"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{studentToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', function () {
+          pm.response.to.have.status(200);
+      });
+    language: text/javascript
+order: 1000

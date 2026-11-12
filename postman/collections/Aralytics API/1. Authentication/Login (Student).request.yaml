@@ -1,0 +1,29 @@
+$kind: http-request
+description: Signs in the seeded student and saves the JWT to {{studentToken}}.
+url: "{{baseUrl}}/api/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "identifier": "miguel@school.edu.ph",
+      "password": "student123"
+    }
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', function () {
+          pm.response.to.have.status(200);
+      });
+
+      const body = pm.response.json();
+      pm.collectionVariables.set('studentToken', body.token);
+      pm.test('studentToken saved', function () {
+          pm.expect(body.token).to.be.a('string').and.not.empty;
+      });
+    language: text/javascript
+order: 1000

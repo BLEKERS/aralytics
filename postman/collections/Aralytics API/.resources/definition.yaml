@@ -1,0 +1,6 @@
+$kind: collection
+description: "Core auth, student and teacher flows for the Aralytics Spring Boot backend. Run the two Login requests first: their test scripts save the JWTs to the studentToken / teacherToken collection variables."
+variables:
+  baseUrl: http://localhost:8080
+  studentToken: ""
+  teacherToken: ""

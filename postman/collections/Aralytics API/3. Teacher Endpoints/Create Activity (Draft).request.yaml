@@ -1,0 +1,43 @@
+$kind: http-request
+description: "Creates a DRAFT activity owned by the seeded teacher. The body matches CreateQuizRequest: options use key/text, and correctAnswer must match one option key."
+url: "{{baseUrl}}/api/teacher/activities"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "title": "Postman Test Quiz",
+      "description": "Created from the Postman collection",
+      "classId": 1,
+      "questions": [
+        {
+          "text": "Test prompt?",
+          "options": [
+            { "key": "A", "text": "Option A" },
+            { "key": "B", "text": "Option B" },
+            { "key": "C", "text": "Option C" },
+            { "key": "D", "text": "Option D" }
+          ],
+          "correctAnswer": "A",
+          "points": 1,
+          "concepts": ["loops"]
+        }
+      ]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{teacherToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('201 Created', function () {
+          pm.response.to.have.status(201);
+      });
+      pm.test('created as DRAFT', function () {
+          pm.expect(pm.response.json().status).to.eql('DRAFT');
+      });
+    language: text/javascript
+order: 3000

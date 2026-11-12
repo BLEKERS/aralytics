@@ -1,0 +1,29 @@
+$kind: http-request
+description: Signs in the seeded teacher and saves the JWT to {{teacherToken}}.
+url: "{{baseUrl}}/api/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "identifier": "maria.santos@university.edu.ph",
+      "password": "asdasdi231"
+    }
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', function () {
+          pm.response.to.have.status(200);
+      });
+
+      const body = pm.response.json();
+      pm.collectionVariables.set('teacherToken', body.token);
+      pm.test('teacherToken saved', function () {
+          pm.expect(body.token).to.be.a('string').and.not.empty;
+      });
+    language: text/javascript
+order: 2000

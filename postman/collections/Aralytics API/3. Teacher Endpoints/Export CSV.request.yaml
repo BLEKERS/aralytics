@@ -1,0 +1,19 @@
+$kind: http-request
+description: Returns the roster as a CSV attachment. In Postman use Send and Download to save the file.
+url: "{{baseUrl}}/api/teacher/reports/export-csv"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{teacherToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200 OK', function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test('CSV content type', function () {
+          pm.expect(pm.response.headers.get('Content-Type')).to.include('text/csv');
+      });
+    language: text/javascript
+order: 4000

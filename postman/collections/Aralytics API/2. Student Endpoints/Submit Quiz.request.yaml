@@ -1,0 +1,33 @@
+$kind: http-request
+description: Submits quiz 1 ("Debugging Python Loops"). Quiz 2 is already submitted by the seeded student, so submitting it again would return 409. Returns 200 when feedback is READY, 202 when PENDING.
+url: "{{baseUrl}}/api/student/quiz/1/submit"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "answers": [
+        { "questionId": 1, "selectedOption": "A" },
+        { "questionId": 2, "selectedOption": "A" },
+        { "questionId": 3, "selectedOption": "A" }
+      ]
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{studentToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('scored or pending (200/202)', function () {
+          pm.expect([200, 202]).to.include(pm.response.code);
+      });
+      if ([200, 202].includes(pm.response.code)) {
+          pm.test('score returned', function () {
+              pm.expect(pm.response.json().score).to.be.a('number');
+          });
+      }
+    language: text/javascript
+order: 4000

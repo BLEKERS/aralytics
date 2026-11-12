@@ -7,6 +7,10 @@ spring:
     password: "" 
   jpa:
     show-sql: false
+    properties:
+      hibernate:
+        # XAMPP MariaDB rejects Hibernate's MySQL CAST(? AS JSON) on quiz create.
+        dialect: org.hibernate.dialect.MariaDBDialect
   mail:
     host: smtp.gmail.com
     port: 587
