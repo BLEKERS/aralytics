@@ -152,9 +152,11 @@ Work targets `main`; create branches as `feature/<issue>-<short-name>` for new w
 
 ## Team
 
-| Name | Role | GitHub |
-|---|---|---|
-| | | |
+| Name | Role |
+|---|---|
+| Dassel Bacaltos | Frontend Deveoper |
+| James Dela Peña | Backend Developer |
+| Kharl Christian Tumamak | DevOps |
 
 _Add team members here._
 

@@ -2,7 +2,7 @@
 
 **Version:** 2.0
 **Date:** November 5, 2026
-**Author:** James Benedict De la Peña, Dassel Bacaltos, Kharil Christian Tumamak
+**Author:** James Benedict De la Peña, Dassel Bacaltos, Kharl Christian Tumamak
 **Status:** MVP Core Complete (40% Backend / Frontend Integration)
 
 ---

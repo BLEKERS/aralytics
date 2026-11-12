@@ -20,8 +20,6 @@ dist-ssr
 /screens/
 /fetch-screens.mjs
 
-graphify-out/
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -35,4 +33,5 @@ graphify-out/
 
 opencode.json
 *.txt
-backend.pdf
+
+/graphify-out/
