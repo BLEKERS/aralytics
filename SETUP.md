@@ -9,6 +9,7 @@
 - **Node.js**: `v20.x` or later (`v22.x` recommended)
 - **npm**: `v10.x` or later
 - **Git**: `v2.40+`
+- **Backend**: JDK 21+ and PostgreSQL 16 on `localhost:5432` (database `aralytics`, user/password `postgres`/`postgres`), or Docker to run `cd backend; docker compose up -d postgres`
 
 ---
 

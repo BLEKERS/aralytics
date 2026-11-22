@@ -168,3 +168,9 @@ Chronological log of steps taken during work sessions on this project, kept rega
 90. Added developer/container assets: `backend/README.md` (setup, env vars, API map, security/data decisions, test matrix, known limitations), `.env.example`, `.gitignore`, `.dockerignore`, `Dockerfile` (multi-stage, non-root), and `docker-compose.yml` (MySQL 8.4 healthcheck + API on port 8080).
 91. Updated the root `README.md` summary/tech stack/getting-started/docs pointer for the backend milestone and this log. Backend work is committed on `feature/backend-40-scaffold`; nothing was pushed.
 
+---
+
+## Session 2026-11-22 (Migrated backend persistence to PostgreSQL 16)
+
+92. Migrated backend persistence from MySQL to PostgreSQL 16: swapped the JDBC driver, Flyway PostgreSQL module and Testcontainers module in `pom.xml`; switched `application*.yml`, `.env.example` and `docker-compose.yml` to PostgreSQL defaults; replaced the active MySQL migrations with a clean `V1__init_postgres.sql` + `V2__seed_dev_postgres.sql` while preserving the old SQL under `db/migration_mysql_legacy`; mapped `app_user` and stored question options as JSON text for PostgreSQL/H2 portability; renamed the Docker-gated e2e test to `EndToEndPostgresTest`; updated docs. No commits or staging were created.
+
