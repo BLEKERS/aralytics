@@ -25,13 +25,14 @@ aralytics/
 │   ├── .env.example                        # Backend environment template (DB, JWT, activation keys, CORS, optional AI)
 │   ├── .gitignore / .dockerignore          # Backend build output, .env, IDE files; Docker build context excludes
 │   ├── Dockerfile                          # Multi-stage Maven build + Temurin 21 JRE, non-root runtime
-│   ├── docker-compose.yml                  # MySQL 8.4 (healthcheck) + backend API on :8080, dev profile
+│   ├── docker-compose.yml                  # PostgreSQL 16 (healthcheck) + backend API on :8080
 │   ├── src/main/resources/
 │   │   ├── application.yml                 # Base config: datasource, JPA, Flyway, JWT/activation/CORS properties, health-only Actuator
 │   │   ├── application-dev.yml             # Dev profile: dev seed + Swagger UI + debug logging
 │   │   ├── application-prod.yml            # Prod profile: migrations only, Swagger disabled
-│   │   ├── db/migration/V1__init.sql       # ERD schema (15 tables incl. QUESTION_CONCEPT)
-│   │   └── db/seed/V2__seed_dev.sql        # Idempotent demo school/users/class/activities/submission/feedback
+│   │   ├── db/migration/V1__init_postgres.sql        # PostgreSQL baseline schema (19 tables)
+│   │   ├── db/seed/V2__seed_dev_postgres.sql         # Demo school/users/class/activities/submission/feedback
+│   │   └── db/migration_mysql_legacy/                # Preserved MySQL V1-V7/V9 history, not on Flyway classpath
 │   ├── src/main/java/ph/aralytics/backend/
 │   │   ├── AralyticsApplication.java        # Spring Boot entry point
 │   │   ├── ai/                             # DiagnosticEngine.java (seam), MockDiagnosticEngine.java (default), LlmDiagnosticEngine.java (ai-profile stub)
@@ -45,11 +46,11 @@ aralytics/
 │   └── src/test/
 │       ├── java/ph/aralytics/backend/
 │       │   ├── ai/MockDiagnosticEngineTest.java      # Feedback length, concepts, fallback, no answer leakage
-│       │   ├── it/                                   # AuthFlowIT, QuizLifecycleIT, AuthorizationIT, SubmitIdempotencyIT, MySQLMigrationIT
+│       │   ├── it/                                   # AuthFlowIT, QuizLifecycleIT, AuthorizationIT, SubmitIdempotencyIT, EndToEndPostgresTest
 │       │   └── support/AbstractApiIT.java            # Shared MockMvc, activation, login, and authoring helpers
 │       └── resources/
-│           ├── application-test.yml                  # H2 MySQL-mode datasource, Hibernate create-drop, Flyway off
-│           └── data.sql                              # H2-compatible seed (JSON FORMAT JSON, identity restarts)
+│           ├── application-test.yml                  # H2 PostgreSQL-mode datasource, Hibernate create-drop, Flyway off
+│           └── data.sql                              # H2-compatible seed (app_user, plain JSON options, identity restarts)
 ├── fetch-screens.mjs                       # Script to fetch Stitch HTML + screenshots into screens/stitch/ (gitignored)
 │
 ├── screens/                                # RAW STITCH EXPORTS (gitignored via /screens/; reference only — never imported at runtime)

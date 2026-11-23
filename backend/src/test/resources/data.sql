@@ -11,7 +11,7 @@ VALUES (1, 'St. Jude Academy Manila', 'Quezon City, Metro Manila', 'registrar@st
         '00c89af703d0f965a4e9b2c8b03e0a5dce45f19b8032a45c63d3a7369ee1697d',
         '7245d52f03542151236b35a9a5597777cc4c236da5cbcce4ad5cc66740127977', 1);
 
-INSERT INTO "user" (id, username, passwordHash, fullName, email, schoolId, role, createdAt, lastLogin)
+INSERT INTO app_user (id, username, passwordHash, fullName, email, schoolId, role, createdAt, lastLogin)
 VALUES (1, 't2024-0104', '$2b$10$giCJ3yA82JyISJZ378g3PeHEdRosNj6gblquGkYtvlRyBlIiQr5hO',
         'Maria Santos', 'maria.santos@university.edu.ph', 1, 'TEACHER', CURRENT_TIMESTAMP, NULL),
        (2, 's2024-9102', '$2b$10$iOfI2QJeGwHrorWndT2Ve.1BfQn3PYF5Ud./8AurNut.kk3QRuY1y',
@@ -43,22 +43,22 @@ VALUES (1, 'Debugging Python Loops',
 
 INSERT INTO question (id, quizId, text, options, correctAnswer, points)
 VALUES (1, 1, 'How many times does the loop body run for range(3)?',
-        '[{"key":"A","text":"3 times"},{"key":"B","text":"2 times"},{"key":"C","text":"4 times"},{"key":"D","text":"0 times"}]' FORMAT JSON,
+        '[{"key":"A","text":"3 times"},{"key":"B","text":"2 times"},{"key":"C","text":"4 times"},{"key":"D","text":"0 times"}]' ,
         'A', 1),
        (2, 1, 'Which change fixes a while loop whose condition never becomes false?',
-        '[{"key":"A","text":"Add more print statements"},{"key":"B","text":"Update the variable used in the condition inside the loop"},{"key":"C","text":"Wrap the loop in a function"},{"key":"D","text":"Change while to for without editing the body"}]' FORMAT JSON,
+        '[{"key":"A","text":"Add more print statements"},{"key":"B","text":"Update the variable used in the condition inside the loop"},{"key":"C","text":"Wrap the loop in a function"},{"key":"D","text":"Change while to for without editing the body"}]' ,
         'B', 1),
        (3, 1, 'What is len(range(2, 8, 2))?',
-        '[{"key":"A","text":"3"},{"key":"B","text":"4"},{"key":"C","text":"2"},{"key":"D","text":"6"}]' FORMAT JSON,
+        '[{"key":"A","text":"3"},{"key":"B","text":"4"},{"key":"C","text":"2"},{"key":"D","text":"6"}]' ,
         'A', 1),
        (4, 2, 'Which Python type stores True or False?',
-        '[{"key":"A","text":"int"},{"key":"B","text":"bool"},{"key":"C","text":"str"},{"key":"D","text":"list"}]' FORMAT JSON,
+        '[{"key":"A","text":"int"},{"key":"B","text":"bool"},{"key":"C","text":"str"},{"key":"D","text":"list"}]' ,
         'B', 1),
        (5, 2, 'What is the value of x after: x = 5; x += 3?',
-        '[{"key":"A","text":"5"},{"key":"B","text":"3"},{"key":"C","text":"8"},{"key":"D","text":"53"}]' FORMAT JSON,
+        '[{"key":"A","text":"5"},{"key":"B","text":"3"},{"key":"C","text":"8"},{"key":"D","text":"53"}]' ,
         'C', 1),
        (6, 3, 'Which keyword defines a function in Python?',
-        '[{"key":"A","text":"function"},{"key":"B","text":"fun"},{"key":"C","text":"def"},{"key":"D","text":"lambda only"}]' FORMAT JSON,
+        '[{"key":"A","text":"function"},{"key":"B","text":"fun"},{"key":"C","text":"def"},{"key":"D","text":"lambda only"}]' ,
         'C', 1);
 
 INSERT INTO question_concept (questionId, conceptId)
@@ -91,7 +91,7 @@ VALUES (1, 2, 1, 50, DATEADD('DAY', -2, CURRENT_TIMESTAMP)),
 -- Explicit IDs above must not collide with identities used by activation/authoring tests.
 ALTER TABLE subscription ALTER COLUMN id RESTART WITH 100;
 ALTER TABLE school ALTER COLUMN id RESTART WITH 100;
-ALTER TABLE "user" ALTER COLUMN id RESTART WITH 100;
+ALTER TABLE app_user ALTER COLUMN id RESTART WITH 100;
 ALTER TABLE "class" ALTER COLUMN id RESTART WITH 100;
 ALTER TABLE enrollment ALTER COLUMN id RESTART WITH 100;
 ALTER TABLE concept ALTER COLUMN id RESTART WITH 100;

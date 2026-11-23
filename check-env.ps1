@@ -5,7 +5,7 @@
       powershell -NoProfile -ExecutionPolicy Bypass -File .\check-env.ps1
 
   Or double-click run-app.bat, which calls this script with the same policy bypass.
-  Requirements: Java 17+, Node.js 20+, and MySQL (XAMPP) on port 3306 or 3307.
+  Requirements: Java 21+, Node.js 20+, and PostgreSQL 16 on port 5432.
 #>
 
 $root = $PSScriptRoot
@@ -21,21 +21,21 @@ Write-Host ""
 Write-Host "Aralytics environment check" -ForegroundColor Cyan
 Write-Host "----------------------------"
 
-# 1. Java 17+
+# 1. Java 21+
 $java = Get-Command java -ErrorAction SilentlyContinue
 if (-not $java) {
-    Fail "Java 17+ is required. Please install it."
+    Fail "Java 21+ is required. Please install it."
 }
 $javaOutput = (& java -version 2>&1 | Out-String)
 if ($javaOutput -notmatch 'version "(\d+)(?:\.(\d+))?') {
-    Fail "Java 17+ is required. Please install it."
+    Fail "Java 21+ is required. Please install it."
 }
 $javaMajor = [int]$Matches[1]
 if ($javaMajor -eq 1 -and $Matches[2]) {
     $javaMajor = [int]$Matches[2]
 }
-if ($javaMajor -lt 17) {
-    Fail "Java 17+ is required. Please install it."
+if ($javaMajor -lt 21) {
+    Fail "Java 21+ is required. Please install it."
 }
 Write-Host "[OK] Java $javaMajor" -ForegroundColor Green
 if ($javaMajor -ge 24) {
@@ -67,28 +67,12 @@ if (-not (Test-Path (Join-Path $frontend "node_modules"))) {
     Write-Host "[OK] Frontend dependencies present" -ForegroundColor Green
 }
 
-# 4. MySQL on 3307 (preferred) or 3306
-$dbPort = $null
-foreach ($port in 3307, 3306) {
-    if (Test-NetConnection -ComputerName localhost -Port $port -InformationLevel Quiet -WarningAction SilentlyContinue) {
-        $dbPort = $port
-        break
-    }
-}
-if (-not $dbPort) {
-    Write-Host "[!] MySQL/XAMPP does not appear to be running on port 3306 or 3307. Please start your database before continuing." -ForegroundColor Yellow
+# 4. PostgreSQL on 5432
+$dbPort = 5432
+if (-not (Test-NetConnection -ComputerName localhost -Port $dbPort -InformationLevel Quiet -WarningAction SilentlyContinue)) {
+    Write-Host "[!] PostgreSQL does not appear to be running on port 5432. Please start it before continuing." -ForegroundColor Yellow
 } else {
-    Write-Host "[OK] MySQL reachable on port $dbPort" -ForegroundColor Green
-
-    $yml = Join-Path $root "backend\src\main\resources\application-dev.yml"
-    if (Test-Path $yml) {
-        $text = Get-Content -Raw $yml
-        $updated = [regex]::Replace($text, "jdbc:mysql://localhost:\d+", "jdbc:mysql://localhost:$dbPort")
-        if ($updated -ne $text) {
-            [System.IO.File]::WriteAllText($yml, $updated)
-            Write-Host "[OK] application-dev.yml datasource port set to $dbPort" -ForegroundColor Green
-        }
-    }
+    Write-Host "[OK] PostgreSQL reachable on port $dbPort" -ForegroundColor Green
 }
 
 Write-Host ""

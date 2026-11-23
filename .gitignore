@@ -35,3 +35,6 @@ opencode.json
 *.txt
 
 /graphify-out/
+
+AGENTS.md 
+.impeccable/
