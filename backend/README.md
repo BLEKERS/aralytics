@@ -7,7 +7,7 @@ frontend links to but that are not in this milestone answer **501 Not Implemente
 returning fabricated data (see [Deferred endpoints](#deferred-endpoints-501)).
 
 - **Java 21**, **Spring Boot 3.4.13**, Maven wrapper (`./mvnw` / `mvnw.cmd`)
-- **MySQL 8** via Spring Data JPA + **Flyway** migrations (`ddl-auto: none`)
+- **PostgreSQL 16** via Spring Data JPA + **Flyway** migrations (`ddl-auto: validate`)
 - **Spring Security** with BCrypt and JJWT 0.12.7 (stateless bearer tokens)
 - **Bean Validation**, RFC 7807 problem responses, springdoc OpenAPI (dev profile only)
 - **JUnit 5 + MockMvc + Testcontainers** (`./mvnw verify`)
@@ -27,15 +27,15 @@ backend/
 │   └── web/           # auth, public, student, teacher controllers + DTOs
 ├── src/main/resources/
 │   ├── application.yml, application-dev.yml, application-prod.yml, application-seed.yml
-│   ├── db/migration/V1__init.sql     # ERD schema (Flyway)
-│   ├── db/migration/V3__school_activation_keys.sql  # per-school key hashes
-│   └── db/seed/V2__seed_dev.sql      # demo data, loaded only by the `seed` profile
-└── src/test/          # H2-backed MockMvc ITs + Docker-gated MySQL migration IT
+│   ├── db/migration/V1__init_postgres.sql          # ERD schema (Flyway)
+│   ├── db/seed/V2__seed_dev_postgres.sql           # demo data (`seed` profile only)
+│   └── db/migration_mysql_legacy/                  # preserved MySQL history, not on the Flyway classpath
+└── src/test/          # H2-backed MockMvc ITs + Docker-gated PostgreSQL migration IT
 ```
 
 ## Quick start
 
-### Option A — Docker Compose (MySQL + API)
+### Option A — Docker Compose (PostgreSQL + API)
 
 ```powershell
 cd backend
@@ -43,20 +43,22 @@ Copy-Item .env.example .env      # then edit secrets if needed
 docker compose up --build
 ```
 
-The API listens on `http://localhost:8080`; MySQL is exposed on `localhost:3306`. Compose starts
-the app with the `prod` profile by default and refuses to start without `JWT_SECRET`. For a local
-demo, set `SPRING_PROFILES_ACTIVE=dev,seed` and a real `JWT_SECRET` in `.env`; `dev` adds Swagger UI
-and `seed` adds the demo rows.
+The API listens on `http://localhost:8080`; PostgreSQL 16 is exposed on `localhost:5432`. Compose
+starts the app with the `prod` profile by default and refuses to start without `JWT_SECRET`. For a
+local demo, set `SPRING_PROFILES_ACTIVE=dev,seed` and a real `JWT_SECRET` in `.env`; `dev` adds
+Swagger UI and `seed` adds the demo rows.
 
-### Option B — Local Maven + local MySQL
+### Option B — Local Maven + local PostgreSQL 16
 
-1. Create the database and a user (or point `DB_URL` at an existing MySQL 8 instance):
+1. Install PostgreSQL 16 (or run only the database with `docker compose up -d postgres`), then
+   create the database:
 
    ```sql
-   CREATE DATABASE aralytics CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   CREATE USER 'aralytics'@'%' IDENTIFIED BY 'aralytics';
-   GRANT ALL PRIVILEGES ON aralytics.* TO 'aralytics'@'%';
+   CREATE DATABASE aralytics;
    ```
+
+   The default local credentials are `postgres` / `postgres`; override them with `DB_USERNAME` and
+   `DB_PASSWORD` if your installation uses different values. MySQL 5.5/8 is no longer the target.
 
 2. Run the app with the dev and seed profiles (schema + demo data + Swagger):
 
@@ -71,8 +73,8 @@ and `seed` adds the demo rows.
    - OpenAPI JSON: <http://localhost:8080/v3/api-docs>
    - Health: <http://localhost:8080/actuator/health>
 
-3. Stop with `Ctrl+C`. Flyway applies `V1__init.sql` and `V3__school_activation_keys.sql` on
-   startup; demo rows run only under the `seed` profile. With `prod` no demo rows are loaded.
+3. Stop with `Ctrl+C`. Flyway applies `V1__init_postgres.sql`; `V2__seed_dev_postgres.sql` is added
+   only under the `seed` profile. With `prod` no demo rows are loaded.
 
 ### Demo credentials (dev seed)
 
@@ -92,14 +94,14 @@ All runtime configuration is environment-overridable (see `.env.example`):
 | Variable | Default | Purpose |
 |---|---|---|
 | `SERVER_PORT` | `8080` | HTTP port |
-| `DB_URL` | `jdbc:mysql://localhost:3306/aralytics?...` | JDBC URL |
-| `DB_USERNAME` / `DB_PASSWORD` | `aralytics` / `aralytics` | Database credentials |
+| `DB_URL` | `jdbc:postgresql://localhost:5432/aralytics` | JDBC URL |
+| `DB_USERNAME` / `DB_PASSWORD` | `postgres` / `postgres` | Database credentials |
 | `DB_POOL_SIZE` | `10` | Hikari maximum pool size |
 | `JWT_SECRET` | dev-only placeholder | HS256 signing key, **≥ 32 bytes**; `prod` refuses the placeholder |
 | `JWT_EXPIRATION_MINUTES` | `120` | Token lifetime |
 | `ACTIVATION_TOKEN_TTL_MINUTES` | `15` | Single-use activation-token lifetime |
 | `INTERVENTION_THRESHOLD` | `70` | Mastery percentage below which a student is flagged |
-| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:5173` | Allowed browser origins |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | Allowed browser origins |
 | `SPRING_PROFILES_ACTIVE` | _(none)_ | `dev` adds Swagger; `seed` adds demo rows (refused in `prod`); `prod` is schema-only; `ai` enables the LLM adapter |
 | `AI_BASE_URL` | _(empty)_ | Base URL for the `ai` profile adapter; empty or failure falls back to the mock engine |
 
@@ -189,9 +191,10 @@ Deferred teacher routes (all return **501**): `POST /api/teacher/activities/ai-g
 
 ## Data model & design decisions
 
-- `V1__init.sql` is the schema authority: 15 tables covering `SUBSCRIPTION`, `SCHOOL`, `USER`,
-  `CLASS`, `ENROLLMENT`, `QUIZ`, `QUESTION`, `CONCEPT`, `QUESTION_CONCEPT`, `SUBMISSION`,
-  `ANSWER`, `FEEDBACK`, `FEEDBACK_CONCEPT`, `PROGRESS_RECORD`, and `NOTIFICATION`.
+- `V1__init_postgres.sql` is the schema authority: 19 tables covering the ERD plus the later
+  activation/settings/draft/inquiry tables. The physical user table is `app_user` because `USER` is
+  reserved in PostgreSQL; the former MySQL migrations are preserved under
+  `db/migration_mysql_legacy` but are not on the Flyway classpath.
 - Two additive pieces were needed beyond the base ERD and are called out in the migration:
   `SCHOOL.institutionCode` (unique; used by activation) and `QUESTION_CONCEPT` (per-question
   concept tags required by the diagnostic engine).
@@ -203,10 +206,10 @@ Deferred teacher routes (all return **501**): `POST /api/teacher/activities/ai-g
 - Scores are never recomputed from the client. The server reloads questions, validates that
   every answer belongs to the quiz, allows omitted answers (scored as incorrect), rejects
   duplicate `questionId`s, and computes `earned/total` as a percentage.
-- H2/MySQL naming: the ERD uses camelCase identifiers, so entities use
-  `PhysicalNamingStrategyStandardImpl`. `ddl-auto` stays `none` on MySQL because Flyway owns
-  the schema; Hibernate type-name differences make strict validation noisy. Schema correctness
-  is covered by `MySQLMigrationIT` instead.
+- camelCase column names are preserved with `PhysicalNamingStrategyStandardImpl`; PostgreSQL folds
+  unquoted identifiers to lowercase. Hibernate auto-detects the dialect and `ddl-auto: validate`
+  checks the Flyway schema at startup. `QUESTION.options` uses VARCHAR/TEXT JSON (not `jsonb`) so
+  H2 in PostgreSQL mode can run the MockMvc tests.
 
 ### Diagnostic engines
 
@@ -250,12 +253,12 @@ $env:JAVA_HOME="C:\Program Files\Java\jdk-21"   # JDK 21+
 | `QuizLifecycleIT` | Teacher create/update/publish → student list/load/save draft/submit → feedback/dashboard; draft invisibility |
 | `AuthorizationIT` | 401/403 boundaries, cross-teacher activity access, cross-student feedback access, roster isolation |
 | `SubmitIdempotencyIT` | Second submit → 409, duplicate/empty/foreign answers → 400, non-enrolled/no-draft → 403/404 |
-| `MySQLMigrationIT` | Flyway applies all ERD tables + dev seed on real MySQL 8 and the seeded teacher can log in (Docker-gated; skipped when Docker is unavailable) |
+| `EndToEndPostgresTest` | Flyway applies all tables + dev seed on real PostgreSQL 16, then seeded login/submit/feedback pass (Docker-gated; skipped when Docker is unavailable) |
 
-Functional ITs use H2 in MySQL mode with Hibernate `create-drop` and an H2-compatible `data.sql`
-so they run without Docker. `MySQLMigrationIT` starts `mysql:8.4` through Testcontainers and
-auto-skips when no Docker daemon is reachable, so run `verify` where Docker exists to exercise
-the real migrations.
+Functional ITs use H2 in PostgreSQL mode with Hibernate `create-drop` and an H2-compatible
+`data.sql` so they run without Docker. `EndToEndPostgresTest` starts `postgres:16` through
+Testcontainers and auto-skips when no Docker daemon is reachable, so run `verify` where Docker
+exists to exercise the real migrations.
 
 ## Known limitations (40% milestone)
 
@@ -276,5 +279,5 @@ These are intentional, documented gaps rather than silent failures:
   exposing the API publicly.
 - **No admin role or subscription enforcement**; `SUBSCRIPTION` is modeled but not enforced.
 - **Swagger is dev-only** and springdoc is not exposed in `prod`.
-- **No Docker locally?** `MySQLMigrationIT` is skipped, so run the migration test in CI where
+- **No Docker locally?** `EndToEndPostgresTest` is skipped, so run the migration test in CI where
   Docker is available.

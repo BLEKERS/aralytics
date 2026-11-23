@@ -8,10 +8,10 @@ spring:
   application:
     name: aralytics-backend
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/aralytics?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
-    username: ${DB_USERNAME:aralytics}
-    password: ${DB_PASSWORD:aralytics}
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/aralytics}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: ${DB_POOL_SIZE:10}
       minimum-idle: 2
@@ -20,10 +20,8 @@ spring:
     open-in-view: false
     hibernate:
       # Flyway is the single source of truth for the schema (see db/migration).
-      # Validation is intentionally off: the ERD uses camelCase MySQL identifiers and
-      # Hibernate's MySQL/H2 type names differ enough that strict validation produces
-      # false drift reports. Migrations are covered by MySQLMigrationIT instead.
-      ddl-auto: none
+      # Hibernate's dialect is auto-detected from the JDBC driver; no explicit dialect.
+      ddl-auto: validate
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     properties:
@@ -70,4 +68,4 @@ aralytics:
   intervention:
     threshold: ${INTERVENTION_THRESHOLD:70}
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}

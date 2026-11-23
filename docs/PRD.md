@@ -59,7 +59,7 @@ Students learning to code often receive generic feedback that arrives too late t
 
 ### 5.1. Backend Architecture (Implemented)
 - **Framework:** Java 21, Spring Boot 3.4.13
-- **Database:** MySQL 8 (Local XAMPP environment for development)
+- **Database:** PostgreSQL 16 (local instance or `backend/docker-compose.yml` for development)
 - **ORM & Migrations:** Spring Data JPA (Hibernate) + Flyway
 - **Authentication:** Stateless JWT (JSON Web Tokens) + Spring Security + BCrypt
 - **API Documentation:** Springdoc OpenAPI (Swagger UI)
@@ -169,7 +169,7 @@ The database accurately reflects the ERD: `SCHOOL`, `USER`, `SUBSCRIPTION`, `CLA
 | Risk | Impact | Mitigation Strategy |
 |------|--------|---------------------|
 | **Real AI is too slow (>5s)** | High | Keep the `MockDiagnosticEngine` as a fallback. Use streaming responses if possible. |
-| **XAMPP/MySQL conflicts** | Medium | The backend supports environment variables (`DB_URL`, `DB_USER`) for easy switching to a production database. |
+| **Database conflicts** | Medium | The backend supports environment variables (`DB_URL`, `DB_USERNAME`, `DB_PASSWORD`) for easy switching to a production database. |
 | **Frontend/Backend desync** | Medium | Maintain strict adherence to the OpenAPI spec. Swagger UI is enabled in dev for contract testing. |
 
 ---
