@@ -3,10 +3,8 @@ package ph.aralytics.backend.domain;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -34,10 +32,10 @@ public class Question {
     private String text;
 
     /**
-     * MySQL JSON array: [{ "key": "A", "text": "..." }, ...].
+     * JSON array stored as TEXT for portability: [{ "key": "A", "text": "..." }, ...].
      */
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(nullable = false, columnDefinition = "JSON")
+    @Convert(converter = QuestionOptionListConverter.class)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private List<QuestionOption> options = new ArrayList<>();
 
     @Column(nullable = false, length = 16)

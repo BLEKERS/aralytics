@@ -2,15 +2,11 @@
 # separate `seed` profile (`SPRING_PROFILES_ACTIVE=dev,seed`). Never use in production.
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/aralytics?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: root
-    password: "" 
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/aralytics}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
   jpa:
     show-sql: false
-    properties:
-      hibernate:
-        # XAMPP MariaDB rejects Hibernate's MySQL CAST(? AS JSON) on quiz create.
-        dialect: org.hibernate.dialect.MariaDBDialect
   mail:
     host: smtp.gmail.com
     port: 587

@@ -4,7 +4,7 @@ AI-powered diagnostic feedback and mastery analytics for Python / CS classrooms 
 
 ## Summary
 
-Aralytics is an AI-supported coding education platform that gives students personalized diagnostic feedback on quizzes and coding scenarios, and gives teachers class dashboards, mastery rosters, and learning analytics. The **core MVP is fully implemented**: the React frontend (13 routed screens with React 19 + Vite 8 + Tailwind CSS v4) is wired to the Spring Boot backend, covering fixed-key account activation, stateless JWT auth, teacher activity authoring, the student quiz lifecycle with durable drafts, deterministic scoring with mock AI diagnostic feedback, student/teacher dashboards, notifications, persistent teacher settings, feedback history and practice drills, and CSV/PDF report exports — all backed by MySQL. The only post-MVP item still open is replacing the deterministic mock diagnostic engine with a live LLM. See [PRD.md](./PRD.md) for the product scope and [backend/README.md](./backend/README.md) for the API surface.
+Aralytics is an AI-supported coding education platform that gives students personalized diagnostic feedback on quizzes and coding scenarios, and gives teachers class dashboards, mastery rosters, and learning analytics. The **core MVP is fully implemented**: the React frontend (13 routed screens with React 19 + Vite 8 + Tailwind CSS v4) is wired to the Spring Boot backend, covering fixed-key account activation, stateless JWT auth, teacher activity authoring, the student quiz lifecycle with durable drafts, deterministic scoring with mock AI diagnostic feedback, student/teacher dashboards, notifications, persistent teacher settings, feedback history and practice drills, and CSV/PDF report exports — all backed by PostgreSQL 16. The only post-MVP item still open is replacing the deterministic mock diagnostic engine with a live LLM. See [PRD.md](./PRD.md) for the product scope and [backend/README.md](./backend/README.md) for the API surface.
 
 ## Problem
 
@@ -56,10 +56,10 @@ Students learning to code often receive feedback that is generic or arrives too 
 | Styling | `tailwindcss@^4` + `@tailwindcss/vite` | Tokens configured via `@theme` in `frontend/src/index.css` |
 | Linter | `oxlint` | `npm run lint` inside `frontend/` |
 | Backend | Spring Boot `3.4.13`, Java `21` | `backend/`; Maven wrapper, Spring Web/JPA/Security/Validation/Actuator |
-| Database | MySQL `8`, Flyway `10` | ERD schema in `backend/src/main/resources/db/migration`; dev-only seed |
+| Database | PostgreSQL `16`, Flyway `10` | ERD schema in `backend/src/main/resources/db/migration`; dev-only seed; legacy MySQL SQL kept under `db/migration_mysql_legacy` |
 | Auth | Spring Security + JJWT `0.12.7` | Stateless HS256 JWT, BCrypt, fixed-key activation (no public signup) |
 | API docs | springdoc `2.8.17` | Swagger UI only under the `dev` profile |
-| Backend tests | JUnit 5, MockMvc, Testcontainers | `./mvnw verify` in `backend/`; MySQL migration IT is Docker-gated |
+| Backend tests | JUnit 5, MockMvc, Testcontainers | `./mvnw verify` in `backend/`; PostgreSQL migration IT is Docker-gated |
 
 A live AI model is not connected yet: the diagnostic engine is deterministic for this milestone,
 with an adapter stub that falls back to it. See [backend/README.md](./backend/README.md).
@@ -85,7 +85,7 @@ with an adapter stub that falls back to it. See [backend/README.md](./backend/RE
 ### Prerequisites
 
 - JDK 21+ and Node.js 20+ / npm 10+
-- MySQL 8 reachable on port 3306 or 3307, or Docker
+- PostgreSQL 16 reachable on port 5432, or Docker
 - `GMAIL_USERNAME` and `GMAIL_APP_PASSWORD` set in your environment. The backend `dev` profile sends password-reset email through Gmail SMTP and **will not start without them** — no defaults are committed. Use a Gmail App Password, not your account password.
 
 ```powershell
@@ -97,7 +97,7 @@ You can also copy `backend/.env.example` to `backend/.env` and fill the values t
 
 ### One-click launch (Windows)
 
-If `run-app.bat` exists in the repository root (it is a local-only helper and is not committed), double-click it. It checks Java 17+, Node.js, `frontend/node_modules` (installing if missing), and MySQL on port 3306/3307, prompts for the Gmail variables if they are not already set, then opens two windows: the Spring Boot API on `http://localhost:8080` and the Vite frontend on `http://localhost:3000`. Close those windows to stop the app.
+If `run-app.bat` exists in the repository root (it is a local-only helper and is not committed), double-click it. It checks Java 21+, Node.js, `frontend/node_modules` (installing if missing), and PostgreSQL on port 5432, prompts for the Gmail variables if they are not already set, then opens two windows: the Spring Boot API on `http://localhost:8080` and the Vite frontend on `http://localhost:3000`. Close those windows to stop the app.
 
 To run only the environment check:
 
@@ -124,14 +124,14 @@ The login screen pre-fills the seeded demo credentials (student `miguel@school.e
 
 ### Backend
 
-Requires JDK 21+ and MySQL 8 (or Docker). The API runs at `http://localhost:8080`.
+Requires JDK 21+ and PostgreSQL 16 (or Docker). The API runs at `http://localhost:8080`.
 
 ```powershell
 cd backend
-docker compose up --build      # MySQL + API with the prod profile (JWT_SECRET required)
+docker compose up --build      # PostgreSQL + API with the prod profile (JWT_SECRET required)
 ```
 
-Or run against a local MySQL with the Maven wrapper:
+Or run against a local PostgreSQL with the Maven wrapper:
 
 ```powershell
 cd backend
