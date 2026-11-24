@@ -4,7 +4,7 @@ AI-powered diagnostic feedback and mastery analytics for Python / CS classrooms 
 
 ## Summary
 
-Aralytics is an AI-supported coding education platform that gives students personalized diagnostic feedback on quizzes and coding scenarios, and gives teachers class dashboards, mastery rosters, and learning analytics. The **core MVP is fully implemented**: the React frontend (13 routed screens with React 19 + Vite 8 + Tailwind CSS v4) is wired to the Spring Boot backend, covering fixed-key account activation, stateless JWT auth, teacher activity authoring, the student quiz lifecycle with durable drafts, deterministic scoring with mock AI diagnostic feedback, student/teacher dashboards, notifications, persistent teacher settings, feedback history and practice drills, and CSV/PDF report exports — all backed by PostgreSQL 16. The only post-MVP item still open is replacing the deterministic mock diagnostic engine with a live LLM. See [PRD.md](./PRD.md) for the product scope and [backend/README.md](./backend/README.md) for the API surface.
+Aralytics is an AI-supported coding education platform that gives students personalized diagnostic feedback on quizzes and coding scenarios, and gives teachers class dashboards, mastery rosters, and learning analytics. The **core MVP is fully implemented**: the React frontend (13 routed screens with React 19 + Vite 8 + Tailwind CSS v4) is wired to the Spring Boot backend, covering fixed-key account activation, stateless JWT auth, teacher activity authoring, the student quiz lifecycle with durable drafts, deterministic scoring with mock AI diagnostic feedback, student/teacher dashboards, notifications, persistent teacher settings, feedback history and practice drills, and CSV/PDF report exports — all backed by PostgreSQL 16. The only post-MVP item still open is replacing the deterministic mock diagnostic engine with a live LLM. See [docs/PRD.md](./docs/PRD.md) for the product scope and [backend/README.md](./backend/README.md) for the API surface.
 
 ## Problem
 
@@ -68,17 +68,17 @@ with an adapter stub that falls back to it. See [backend/README.md](./backend/RE
 
 | Document | Description |
 |---|---|
-| [SETUP.md](./SETUP.md) | Quick-start, available commands, and demo credentials |
-| [backend/README.md](./backend/README.md) | Backend setup, environment variables, API map, design decisions, and tests |
-| [PRD.md](./PRD.md) | Product requirements and implementation status |
+| [docs/SETUP.md](./docs/SETUP.md) | Quick-start, available commands, and demo credentials |
+| [backend/README.md](./backend/README.md) | Backend setup, environment switching (`.env` vs `.env.prod`), API map, design decisions, and tests |
+| [docs/PRD.md](./docs/PRD.md) | Product requirements and implementation status |
 | [docs/architecture.md](./docs/architecture.md) | Architecture notes (planned backend and AI service) |
 | [docs/requirements.md](./docs/requirements.md) | Functional / non-functional requirements breakdown |
 | [docs/team-roles.md](./docs/team-roles.md) | Team roles and responsibilities |
 | [CONTRIBUTING.md](./CONTRIBUTING.md) | Contribution guidelines and branch conventions |
-| [NAVIGATION.md](./NAVIGATION.md) | Screen routes, navigation graph, and planned `/api/*` endpoint map |
-| [HANDOFF.md](./HANDOFF.md) | Architecture, design tokens, and Stitch-to-React conversion rules |
-| [FILETREE.md](./FILETREE.md) | Complete directory and file purpose map |
-| [LOG.md](./LOG.md) | Chronological append-only log of project changes |
+| [docs/NAVIGATION.md](./docs/NAVIGATION.md) | Screen routes, navigation graph, and planned `/api/*` endpoint map |
+| [docs/HANDOFF.md](./docs/HANDOFF.md) | Architecture, design tokens, backend/frontend commands, and Stitch-to-React rules |
+| [docs/FILETREE.md](./docs/FILETREE.md) | Complete directory and file purpose map |
+| [docs/LOG.md](./docs/LOG.md) | Chronological append-only log of project changes |
 
 ## Getting Started
 
@@ -120,31 +120,46 @@ npm run lint    # oxlint across frontend/src/
 npm run build   # production bundle into frontend/dist/
 ```
 
-The login screen pre-fills the seeded demo credentials (student `miguel@school.edu.ph` / `student123`, teacher `maria.santos@university.edu.ph` / `teacher123`) and authenticates against the real API. They come from the local `seed` profile only — change them before any real deployment. See [SETUP.md](./SETUP.md).
+The login screen pre-fills the seeded demo credentials (student `miguel@school.edu.ph` / `student123`, teacher `maria.santos@university.edu.ph` / `teacher123`) and authenticates against the real API. They come from the local `seed` profile only — change them before any real deployment. See [docs/SETUP.md](./docs/SETUP.md).
 
-### Backend
+### Backend (`dev,seed` vs `prod` environments)
 
-Requires JDK 21+ and PostgreSQL 16 (or Docker). The API runs at `http://localhost:8080`.
+Requires JDK 21+ and PostgreSQL 16 (or Docker). The API runs at `http://localhost:8080`. Two separate env files keep `dev,seed` (`aralytics` DB, `V1` + `V2`) isolated from `prod` (`aralytics_prod` DB, `V1` only) so switching test modes avoids Flyway validation conflicts:
+
+- `backend/.env` (copied from `backend/.env.example`): `SPRING_PROFILES_ACTIVE=dev,seed`, `DB_NAME=aralytics` (Swagger UI + demo accounts).
+- `backend/.env.prod` (copied from `backend/.env.prod.example`): `SPRING_PROFILES_ACTIVE=prod`, `DB_NAME=aralytics_prod` (schema-only, Swagger disabled, `ProductionConfigGuard` enforced).
+
+```powershell
+# Fastest way — one-command Node.js Docker switcher (from repo root):
+node switch-env.js dev              # switch to dev,seed (aralytics DB, Swagger + demo accounts)
+node switch-env.js dev --reset-db   # wipe & re-seed aralytics DB (fixes 409 already-submitted quiz)
+node switch-env.js prod             # switch to prod (aralytics_prod DB, schema-only, Swagger off)
+node switch-env.js status           # inspect active profile, DB, and readiness
+node switch-env.js stop             # stop Docker containers
+```
+
+Or run Docker Compose / Maven manually from `backend/`:
 
 ```powershell
 cd backend
-docker compose up --build      # PostgreSQL + API with the prod profile (JWT_SECRET required)
+docker compose up -d postgres                        # start PostgreSQL 16 on port 5432
+
+# Option 1: Docker Compose (full stack)
+docker compose --env-file .env up --build            # dev,seed -> aralytics DB
+docker compose --env-file .env.prod up --build       # prod     -> aralytics_prod DB
+
+# Option 2: Maven wrapper against Postgres on localhost:5432
+Get-Content .env | Where-Object { $_ -match '^[A-Za-z_][A-Za-z0-9_]*=.+' } | ForEach-Object { $k,$v = $_ -split '=',2; Set-Item "Env:$k" $v }
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.jvmArguments=-DGMAIL_USERNAME= -DGMAIL_APP_PASSWORD="
+
+# Switch to prod mode (ensure `aralytics_prod` DB exists):
+Get-Content .env.prod | Where-Object { $_ -match '^[A-Za-z_][A-Za-z0-9_]*=.+' } | ForEach-Object { $k,$v = $_ -split '=',2; Set-Item "Env:$k" $v }
+.\mvnw.cmd spring-boot:run
+
+.\mvnw.cmd -B verify                                 # unit + integration tests
 ```
 
-Or run against a local PostgreSQL with the Maven wrapper:
-
-```powershell
-cd backend
-$env:JAVA_HOME="C:\Program Files\Java\jdk-21"
-.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev,seed"
-.\mvnw.cmd -B verify           # unit + integration tests
-```
-
-Configuration is environment-driven; copy `backend/.env.example` to `backend/.env`. The `dev`
-profile sends password-reset email through Gmail SMTP, so it **requires `GMAIL_USERNAME` and
-`GMAIL_APP_PASSWORD` to be set** (no defaults are committed) — the backend will not start without
-them. The `test` profile needs neither. Swagger is available at `/swagger-ui.html` and health at
-`/actuator/health` under the dev profile; the demo data needs the `seed` profile. Demo credentials, API routes, the security model, and endpoint coverage are documented in [backend/README.md](./backend/README.md).
+Under `dev`, Swagger is exposed at `/swagger-ui.html` and readiness at `/actuator/health/readiness` (empty `-DGMAIL_USERNAME= -DGMAIL_APP_PASSWORD=` JVM args allow booting `dev` on Windows without SMTP credentials; set real Gmail App Password values to test password-reset mail). Under `prod`, `/actuator/health` is exposed, Swagger returns `404`, and `JWT_SECRET` must be a unique secret of at least 32 bytes. Demo credentials, API routes, and security rules are documented in [backend/README.md](./backend/README.md).
 
 ## Branching & Workflow
 

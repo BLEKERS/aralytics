@@ -21,19 +21,17 @@ not typed by hand: the login requests save it into a collection variable automat
 
 ## 2. Prerequisites
 
-1. **Backend running on `http://localhost:8080`.** From the repo root:
+1. **Backend running on `http://localhost:8080` in `dev,seed` mode** (using `backend/.env` against the `aralytics` DB — **not** `.env.prod` / `aralytics_prod`, which intentionally omits demo accounts). From `backend/`:
 
    ```powershell
-   $env:GMAIL_USERNAME="you@gmail.com"
-   $env:GMAIL_APP_PASSWORD="your-16-character-app-password"
-   cd backend
-   .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev,seed"
+   docker compose up -d postgres
+   Get-Content .env | Where-Object { $_ -match '^[A-Za-z_][A-Za-z0-9_]*=.+' } | ForEach-Object { $k,$v = $_ -split '=',2; Set-Item "Env:$k" $v }
+   .\mvnw.cmd spring-boot:run "-Dspring-boot.run.jvmArguments=-DGMAIL_USERNAME= -DGMAIL_APP_PASSWORD="
    ```
 
    - `dev` enables the API and Swagger UI.
-   - `seed` creates the demo school, teacher, student, classes, quizzes, submission and feedback.
-   - The two Gmail variables are required to boot `dev` (password-reset mail); any non-empty
-     value is enough for this demo.
+   - `seed` creates the demo school, teacher, student, classes, quizzes, submission and feedback in `aralytics`.
+   - `-DGMAIL_USERNAME= -DGMAIL_APP_PASSWORD=` lets `dev` boot on Windows when Gmail SMTP credentials in `.env` are blank (set real Gmail App Password values if testing password reset).
    - Wait for `Started AralyticsApplication`.
 
 2. **A Postman workspace.** Import `Aralytics_API.postman_collection.json`:
@@ -116,6 +114,7 @@ the `.csv` file instead of rendering it.
 **401 Unauthorized**
 
 - The login request has not been run, so `{{studentToken}}` / `{{teacherToken}}` is still empty.
+- The backend is running with `.env.prod` (`SPRING_PROFILES_ACTIVE=prod` against `aralytics_prod`), which has no seeded demo accounts and uses a separate `JWT_SECRET`. Switch back to `.env` (`dev,seed`) and re-run Login.
 - Or the JWT expired. Tokens last **120 minutes** by default; re-run the matching Login request
   and Send again.
 

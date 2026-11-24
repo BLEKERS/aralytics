@@ -37,44 +37,69 @@ backend/
 
 ### Option A — Docker Compose (PostgreSQL + API)
 
+Two env templates are provided so you can switch cleanly between local demo/dev (`aralytics` DB, `V1` + `V2` seed) and production-mode testing (`aralytics_prod` DB, `V1` schema only — isolated so Flyway `validate-on-migrate` never collides with `V2` seed history).
+
+Use the root `switch-env.js` helper to switch, reset, or inspect the Docker stack in one command (auto-creates `.env` / `.env.prod`, ensures the target database exists, and waits for `/actuator/health/readiness`):
+
 ```powershell
-cd backend
-Copy-Item .env.example .env      # then edit secrets if needed
-docker compose up --build
+# From repo root:
+node switch-env.js dev              # dev,seed -> aralytics DB (Swagger + demo rows)
+node switch-env.js dev --reset-db   # drop & re-seed aralytics DB only (leaves aralytics_prod intact)
+node switch-env.js prod             # prod     -> aralytics_prod DB (no Swagger, no seed rows)
+node switch-env.js prod --build     # rebuild backend image after Java source edits
+node switch-env.js status           # print active profile, DB URL, and readiness
+node switch-env.js stop             # stop containers
 ```
 
-The API listens on `http://localhost:8080`; PostgreSQL 16 is exposed on `localhost:5432`. Compose
-starts the app with the `prod` profile by default and refuses to start without `JWT_SECRET`. For a
-local demo, set `SPRING_PROFILES_ACTIVE=dev,seed` and a real `JWT_SECRET` in `.env`; `dev` adds
-Swagger UI and `seed` adds the demo rows.
+Or run `docker compose` directly from `backend/`:
 
-### Option B — Local Maven + local PostgreSQL 16
+```powershell
+cd backend
+Copy-Item .env.example .env            # dev,seed -> aralytics DB
+Copy-Item .env.prod.example .env.prod  # prod     -> aralytics_prod DB (set JWT_SECRET >= 32 bytes)
+
+docker compose --env-file .env up --build       # local demo (Swagger + seed rows)
+docker compose --env-file .env.prod up --build  # prod-mode test (no Swagger, no seed rows)
+```
+
+The API listens on `http://localhost:8080`; PostgreSQL 16 is exposed on `localhost:5432`. If `aralytics-postgres` was already initialized earlier, create `aralytics_prod` once inside the container (`docker exec aralytics-postgres psql -U postgres -c "CREATE DATABASE aralytics_prod;"`).
+
+### Option B — Local Maven + PostgreSQL 16
 
 1. Install PostgreSQL 16 (or run only the database with `docker compose up -d postgres`), then
-   create the database:
+   ensure the databases exist:
 
    ```sql
-   CREATE DATABASE aralytics;
+   CREATE DATABASE aralytics;       -- used by .env (dev,seed)
+   CREATE DATABASE aralytics_prod;  -- used by .env.prod (prod)
    ```
 
    The default local credentials are `postgres` / `postgres`; override them with `DB_USERNAME` and
    `DB_PASSWORD` if your installation uses different values. MySQL 5.5/8 is no longer the target.
 
-2. Run the app with the dev and seed profiles (schema + demo data + Swagger):
+2. Load the desired env file and run Spring Boot:
 
+   **Dev + seed mode (`.env` → `aralytics`, Swagger + demo data):**
    ```powershell
    cd backend
-   $env:JAVA_HOME="C:\Program Files\Java\jdk-21"   # or any JDK 21+
-   .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev,seed"
+   Get-Content .env | Where-Object { $_ -match '^[A-Za-z_][A-Za-z0-9_]*=.+' } | ForEach-Object { $k,$v = $_ -split '=',2; Set-Item "Env:$k" $v }
+   .\mvnw.cmd spring-boot:run "-Dspring-boot.run.jvmArguments=-DGMAIL_USERNAME= -DGMAIL_APP_PASSWORD="
+   ```
+   *(On Windows, empty env vars are dropped; passing `-DGMAIL_USERNAME= -DGMAIL_APP_PASSWORD=` lets `dev` boot when Gmail SMTP credentials in `.env` are blank.)*
+
+   **Production test mode (`.env.prod` → `aralytics_prod`, schema-only, `ProductionConfigGuard` active):**
+   ```powershell
+   cd backend
+   Get-Content .env.prod | Where-Object { $_ -match '^[A-Za-z_][A-Za-z0-9_]*=.+' } | ForEach-Object { $k,$v = $_ -split '=',2; Set-Item "Env:$k" $v }
+   .\mvnw.cmd spring-boot:run
    ```
 
-   Dev-only URLs:
-   - Swagger UI: <http://localhost:8080/swagger-ui.html>
-   - OpenAPI JSON: <http://localhost:8080/v3/api-docs>
-   - Health: <http://localhost:8080/actuator/health>
+   URLs:
+   - Swagger UI (`dev` only): <http://localhost:8080/swagger-ui.html>
+   - OpenAPI JSON (`dev` only): <http://localhost:8080/v3/api-docs>
+   - Readiness / Health: <http://localhost:8080/actuator/health/readiness> (`/actuator/health` is `UP` in `prod`, or in `dev` once Gmail SMTP credentials are valid)
 
-3. Stop with `Ctrl+C`. Flyway applies `V1__init_postgres.sql`; `V2__seed_dev_postgres.sql` is added
-   only under the `seed` profile. With `prod` no demo rows are loaded.
+3. Stop with `Ctrl+C` before switching modes in a fresh PowerShell session. Flyway applies `V1__init_postgres.sql` everywhere; `V2__seed_dev_postgres.sql` is added only under `seed` and refused in `prod`.
 
 ### Demo credentials (dev seed)
 
@@ -89,19 +114,23 @@ reuse them in a real deployment.
 
 ## Configuration
 
-All runtime configuration is environment-overridable (see `.env.example`):
+All runtime configuration is environment-overridable (see `.env.example` for dev/seed and `.env.prod.example` for prod):
 
 | Variable | Default | Purpose |
 |---|---|---|
 | `SERVER_PORT` | `8080` | HTTP port |
-| `DB_URL` | `jdbc:postgresql://localhost:5432/aralytics` | JDBC URL |
+| `DB_NAME` | `aralytics` | Database name used by Docker Compose (`aralytics` for dev, `aralytics_prod` for prod) |
+| `DB_URL` | `jdbc:postgresql://localhost:5432/aralytics` | JDBC URL (`localhost:5432/aralytics_prod` in `.env.prod`) |
 | `DB_USERNAME` / `DB_PASSWORD` | `postgres` / `postgres` | Database credentials |
 | `DB_POOL_SIZE` | `10` | Hikari maximum pool size |
 | `JWT_SECRET` | dev-only placeholder | HS256 signing key, **≥ 32 bytes**; `prod` refuses the placeholder |
 | `JWT_EXPIRATION_MINUTES` | `120` | Token lifetime |
 | `ACTIVATION_TOKEN_TTL_MINUTES` | `15` | Single-use activation-token lifetime |
+| `PASSWORD_RESET_TTL_MINUTES` | `15` | Password-reset token lifetime |
+| `GMAIL_USERNAME` / `GMAIL_APP_PASSWORD` | _(required in `dev`)_ | Gmail SMTP credentials for password-reset emails under `dev` |
 | `INTERVENTION_THRESHOLD` | `70` | Mastery percentage below which a student is flagged |
-| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | Allowed browser origins |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | Allowed browser origins (comma-separated) |
+| `FRONTEND_BASE_URL` | `http://localhost:3000` | Base URL embedded in password-reset links |
 | `SPRING_PROFILES_ACTIVE` | _(none)_ | `dev` adds Swagger; `seed` adds demo rows (refused in `prod`); `prod` is schema-only; `ai` enables the LLM adapter |
 | `AI_BASE_URL` | _(empty)_ | Base URL for the `ai` profile adapter; empty or failure falls back to the mock engine |
 

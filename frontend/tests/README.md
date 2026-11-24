@@ -9,9 +9,9 @@ Current status: **this directory contains no test files yet.** No unit test runn
 - **Unit tests** for pure logic and utility functions once a runner is chosen (e.g. Vitest, which fits the existing Vite setup).
 - **Component smoke tests** that mount each screen and assert it renders its key sections without errors, also once a runner is installed.
 - **Route / integration checks with Playwright** against `http://localhost:3000` (running dev server):
-  - Every route loads and renders (13 core routes; see `HANDOFF.md` section 4).
+  - Every route loads and renders (13 core routes; see [`docs/HANDOFF.md`](../../docs/HANDOFF.md) section 4).
   - **No horizontal overflow** at 320, 390, 768, 1024, and 1440 px viewport widths.
-  - Key role flows: `/login` -> Sign In as Student -> `/student/dashboard`; `/login` -> Sign In as Teacher -> `/teacher/dashboard` (plus public landing and `/register` activation path).
+  - Key role flows against the live API on `http://localhost:8080` (use `backend/.env` `dev,seed` on `aralytics` for seeded logins, or `backend/.env.prod` `prod` on `aralytics_prod` for clean-slate verification; see [`backend/README.md`](../../backend/README.md)): `/login` -> Sign In as Student -> `/student/dashboard`; `/login` -> Sign In as Teacher -> `/teacher/dashboard` (plus public landing and `/register` activation path).
 
 ## How to run tests
 
