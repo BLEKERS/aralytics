@@ -30,31 +30,46 @@ export default function Sidebar({ open = false, onClose }) {
       } lg:flex fixed left-0 top-0 h-screen w-[250px] max-w-[85vw] bg-surface-container-lowest z-50 flex-col justify-between shadow-[0_1px_8px_rgba(91,75,219,0.06)] transition-transform duration-300`}
     >
       <div className="flex flex-col">
-        <div className="h-[72px] flex items-center px-space-lg gap-space-sm">
+        <div className="h-[72px] flex items-center justify-between px-space-lg gap-space-sm">
           <BrandLogo to="/teacher/dashboard" />
+          {onClose && (
+            <button
+              aria-label="Close navigation"
+              className="lg:hidden w-8 h-8 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface flex items-center justify-center transition-colors cursor-pointer"
+              onClick={onClose}
+              title="Close navigation"
+              type="button"
+            >
+              <span aria-hidden="true" className="material-symbols-outlined text-[20px]">
+                close
+              </span>
+            </button>
+          )}
         </div>
-        <nav className="flex flex-col gap-space-xs px-space-md mt-space-sm">
+        <nav aria-label="Teacher navigation" className="flex flex-col gap-space-xs px-space-md mt-space-sm">
           {NAV_ITEMS.map((item) => (
             <NavLink
               key={item.path}
               className={({ isActive }) =>
-                `flex items-center gap-space-sm px-space-md py-space-sm rounded-xl text-on-surface-variant font-label-lg text-label-lg transition-all ${
+                `flex items-center gap-space-sm px-space-md py-space-sm rounded-xl font-label-lg text-label-lg transition-all ${
                   isActive
                     ? 'bg-primary-container text-on-primary font-bold shadow-sm'
-                    : 'hover:bg-surface-container-high hover:text-on-surface'
+                    : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
                 }`
               }
               to={item.path}
               onClick={onClose}
             >
-              <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+              <span aria-hidden="true" className="material-symbols-outlined text-[20px]">
+                {item.icon}
+              </span>
               <span>{item.label}</span>
             </NavLink>
           ))}
         </nav>
       </div>
-      <div className="p-space-md m-space-md rounded-xl bg-surface-container-low flex items-center justify-between">
-        <Link className="flex items-center gap-space-sm min-w-0" title="View profile" to="/profile">
+      <div className="p-space-md m-space-md rounded-xl bg-surface-container-low flex items-center justify-between gap-space-xs">
+        <Link className="flex items-center gap-space-sm min-w-0 rounded-lg" title="View profile" to="/profile">
           <img
             alt="Profile"
             className="w-8 h-8 rounded-full object-cover shrink-0"
@@ -71,12 +86,15 @@ export default function Sidebar({ open = false, onClose }) {
           </div>
         </Link>
         <Link
-          className="text-on-surface-variant hover:text-primary transition-colors p-space-xs"
+          aria-label="Sign out"
+          className="w-8 h-8 rounded-xl flex items-center justify-center text-on-surface-variant hover:text-error hover:bg-error-container transition-colors shrink-0"
           onClick={handleLogout}
           title="Sign out"
           to="/login"
         >
-          <span className="material-symbols-outlined text-[20px]">swap_horiz</span>
+          <span aria-hidden="true" className="material-symbols-outlined text-[20px]">
+            logout
+          </span>
         </Link>
       </div>
     </aside>

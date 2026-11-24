@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import BrandLogo from '../BrandLogo'
 import NotificationBell from '../NotificationBell'
@@ -16,15 +16,28 @@ export default function StudentHeader({ active }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const user = getStoredUser()
 
+  useEffect(() => {
+    if (!menuOpen) return undefined
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setMenuOpen(false)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [menuOpen])
+
   return (
     <header className="fixed top-0 left-0 right-0 w-full z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(91,75,219,0.06)]">
       <div className="h-20 max-w-7xl mx-auto px-gutter flex items-center justify-between gap-space-md">
         <div className="flex items-center gap-space-lg">
           <BrandLogo to="/student/dashboard" />
-          <nav className="hidden xl:flex items-center gap-space-xs bg-surface-container-low/70 p-1.5 rounded-2xl">
+          <nav
+            aria-label="Student navigation"
+            className="hidden xl:flex items-center gap-space-xs bg-surface-container-low/70 p-1.5 rounded-2xl"
+          >
             {STUDENT_NAV.map((item) => (
               <Link
                 key={item.path}
+                aria-current={active === item.path ? 'page' : undefined}
                 to={item.path}
                 className={
                   active === item.path
@@ -38,13 +51,13 @@ export default function StudentHeader({ active }) {
           </nav>
           <button
             aria-expanded={menuOpen}
-            aria-label="Open navigation menu"
-            className="xl:hidden w-10 h-10 rounded-xl bg-surface-container-low hover:bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-all shrink-0"
+            aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            className="xl:hidden w-10 h-10 rounded-xl bg-surface-container-low hover:bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-all shrink-0 cursor-pointer"
             onClick={() => setMenuOpen((value) => !value)}
             title="Menu"
             type="button"
           >
-            <span className="material-symbols-outlined text-[20px]">
+            <span aria-hidden="true" className="material-symbols-outlined text-[20px]">
               {menuOpen ? 'close' : 'menu'}
             </span>
           </button>
@@ -52,16 +65,16 @@ export default function StudentHeader({ active }) {
         <div className="flex items-center gap-space-sm sm:gap-space-md">
           <NotificationBell
             role="student"
-            buttonClassName="relative w-10 h-10 rounded-xl bg-surface-container-low hover:bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-all"
+            buttonClassName="relative w-10 h-10 rounded-xl bg-surface-container-low hover:bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-all cursor-pointer"
           />
           <div className="flex items-center gap-space-sm pl-1 sm:pl-2">
             <Link
-              className="flex items-center gap-2.5 bg-surface-container-low py-1.5 pl-2 pr-2 sm:pr-3.5 rounded-full"
+              className="flex items-center gap-2.5 bg-surface-container-low py-1.5 pl-2 pr-2 sm:pr-3.5 rounded-full hover:bg-surface-container transition-colors"
               title="View profile"
               to="/profile"
             >
               <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 shadow-sm">
-                <span className="material-symbols-outlined text-on-primary text-[18px]">
+                <span aria-hidden="true" className="material-symbols-outlined text-on-primary text-[18px]">
                   person
                 </span>
               </div>
@@ -75,7 +88,8 @@ export default function StudentHeader({ active }) {
               </div>
             </Link>
             <button
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-on-surface-variant hover:text-error hover:bg-error-container transition-all"
+              aria-label="Sign out"
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-on-surface-variant hover:text-error hover:bg-error-container transition-all cursor-pointer"
               onClick={async () => {
                 await logout()
                 window.location.assign('/login')
@@ -83,16 +97,22 @@ export default function StudentHeader({ active }) {
               title="Sign out"
               type="button"
             >
-              <span className="material-symbols-outlined text-[20px]">logout</span>
+              <span aria-hidden="true" className="material-symbols-outlined text-[20px]">
+                logout
+              </span>
             </button>
           </div>
         </div>
       </div>
       {menuOpen && (
-        <div className="xl:hidden border-t border-outline-variant/30 bg-surface-container-lowest/95 backdrop-blur-xl px-gutter py-space-md flex flex-col gap-1">
+        <nav
+          aria-label="Mobile student navigation"
+          className="xl:hidden border-t border-outline-variant/30 bg-surface-container-lowest/95 backdrop-blur-xl px-gutter py-space-md flex flex-col gap-1"
+        >
           {STUDENT_NAV.map((item) => (
             <Link
               key={item.path}
+              aria-current={active === item.path ? 'page' : undefined}
               className={
                 active === item.path
                   ? 'flex items-center px-3.5 py-2.5 rounded-xl bg-surface-container-high text-primary font-label-lg text-label-lg font-bold'
@@ -104,7 +124,7 @@ export default function StudentHeader({ active }) {
               {item.label}
             </Link>
           ))}
-        </div>
+        </nav>
       )}
     </header>
   )
