@@ -6,30 +6,34 @@ import { describeApiError } from '../../components/DataState';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
-const DEFAULT_CREDENTIALS = {
-  student: {
-    identifier: 'miguel@school.edu.ph',
-    password: 'student123',
-  },
-  teacher: {
-    identifier: 'maria.santos@university.edu.ph',
-    password: 'teacher123',
-  },
-};
+const DEFAULT_CREDENTIALS = import.meta.env.PROD
+  ? null
+  : {
+      student: {
+        identifier: 'miguel@school.edu.ph',
+        password: 'student123',
+      },
+      teacher: {
+        identifier: 'maria.santos@university.edu.ph',
+        password: 'teacher123',
+      },
+    };
 
 export default function LoginScreen() {
   const navigate = useNavigate();
   const [role, setRole] = useState('student');
-  const [identifier, setIdentifier] = useState(DEFAULT_CREDENTIALS.student.identifier);
-  const [password, setPassword] = useState(DEFAULT_CREDENTIALS.student.password);
+  const [identifier, setIdentifier] = useState(DEFAULT_CREDENTIALS?.student.identifier ?? '');
+  const [password, setPassword] = useState(DEFAULT_CREDENTIALS?.student.password ?? '');
   const [showPassword, setShowPassword] = useState(false);
   const [authState, setAuthState] = useState('idle');
   const [error, setError] = useState(null);
 
   const handleRoleChange = (nextRole) => {
     setRole(nextRole);
-    setIdentifier(DEFAULT_CREDENTIALS[nextRole].identifier);
-    setPassword(DEFAULT_CREDENTIALS[nextRole].password);
+    if (DEFAULT_CREDENTIALS) {
+      setIdentifier(DEFAULT_CREDENTIALS[nextRole].identifier);
+      setPassword(DEFAULT_CREDENTIALS[nextRole].password);
+    }
     setError(null);
   };
 
@@ -191,8 +195,8 @@ export default function LoginScreen() {
                       onChange={(e) => setIdentifier(e.target.value)}
                       placeholder={
                         isStudent
-                          ? 'e.g. s2024-9102 or miguel@school.edu.ph'
-                          : 'e.g. maria.santos@university.edu.ph'
+                          ? 'Student ID or you@school.edu.ph'
+                          : 'Teacher ID or you@school.edu.ph'
                       }
                       required
                       type="text"

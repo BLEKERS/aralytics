@@ -6,6 +6,10 @@ import { DataError } from '../../components/DataState';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
+const KEY_PLACEHOLDERS = import.meta.env.PROD
+  ? { school: 'SCHOOL-CODE-2025', student: 'ACCESS-KEY', educator: 'FACULTY-PIN' }
+  : { school: 'e.g. STJUDE-MNL-2025', student: 'KEY-8821-PY', educator: 'FAC-2025-DEPED' };
+
 export default function AccountActivationScreen() {
   const navigate = useNavigate();
   const [role, setRole] = useState('student');
@@ -218,7 +222,7 @@ export default function AccountActivationScreen() {
                     <label className="font-label-lg text-[15px] font-semibold text-on-surface" htmlFor="institution-code">
                       School or Institution Code
                     </label>
-                    <span className="font-label-md text-label-md text-on-surface-variant">e.g. STJUDE-CS-2025</span>
+                    <span className="font-label-md text-label-md text-on-surface-variant">e.g. SCHOOL-CS-2025</span>
                   </div>
                   <div className="relative flex items-center">
                     <span className="material-symbols-outlined absolute left-3.5 text-outline text-[22px] pointer-events-none">domain</span>
@@ -226,7 +230,7 @@ export default function AccountActivationScreen() {
                       className="w-full pl-11 pr-4 py-3.5 bg-surface-container-low text-on-surface font-body-lg text-[15px] rounded-xl placeholder:text-outline/70 focus:bg-surface-container-lowest focus:outline-none focus:shadow-[0_0_0_3px_rgba(91,75,219,0.22)] transition-all uppercase tracking-wider"
                       id="institution-code"
                       onChange={(e) => setInstitutionCode(e.target.value)}
-                      placeholder="e.g. STJUDE-MNL-2025"
+                      placeholder={KEY_PLACEHOLDERS.school}
                       required
                       type="text"
                       value={institutionCode}
@@ -248,7 +252,7 @@ export default function AccountActivationScreen() {
                       className="w-full pl-11 pr-4 py-3.5 bg-surface-container-low text-on-surface font-body-lg text-[15px] rounded-xl placeholder:text-outline/70 focus:bg-surface-container-lowest focus:outline-none focus:shadow-[0_0_0_3px_rgba(91,75,219,0.22)] transition-all uppercase tracking-wider"
                       id="access-key"
                       onChange={(e) => setAccessKey(e.target.value)}
-                      placeholder={isStudent ? 'KEY-8821-PY' : 'FAC-2025-DEPED'}
+                      placeholder={isStudent ? KEY_PLACEHOLDERS.student : KEY_PLACEHOLDERS.educator}
                       required
                       type="text"
                       value={accessKey}
