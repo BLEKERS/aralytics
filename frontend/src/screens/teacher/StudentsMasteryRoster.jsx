@@ -17,21 +17,21 @@ const STATUS_META = {
     pill: 'bg-secondary-container text-on-secondary-container',
     text: 'text-secondary',
     dot: 'bg-secondary',
-    icon: '✅',
+    icon: 'check_circle',
   },
   practice: {
     label: 'Needs Practice',
     pill: 'bg-tertiary-fixed text-on-tertiary-fixed',
     text: 'text-tertiary',
     dot: 'bg-tertiary-fixed-dim',
-    icon: '⚠️',
+    icon: 'schedule',
   },
   struggling: {
     label: 'Needs Help',
     pill: 'bg-error-container text-on-error-container',
     text: 'text-error',
     dot: 'bg-error',
-    icon: '⚠️',
+    icon: 'warning',
   },
 }
 
@@ -243,14 +243,9 @@ export default function StudentsMasteryRoster() {
         {/* Top Context & Header Action Band */}
         <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-space-md">
           <div className="flex flex-col gap-space-xs">
-            <div className="flex items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
-              <span className="text-primary font-bold">Classroom Central</span>
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <span className="">Learner Performance Diagnostics</span>
-            </div>
             <h1 className="font-headline-lg text-headline-lg text-on-surface tracking-tight">Students &amp; Coding Mastery Roster</h1>
             <p className="font-body-md text-body-md text-on-surface-variant">
-              {counts.all} enrolled {counts.all === 1 ? 'student' : 'students'} in <span className="text-primary font-semibold">{classLabel}</span> · Spring Cohort Assessment Period
+              <span className="tabular-nums">{counts.all}</span> enrolled {counts.all === 1 ? 'student' : 'students'} in <span className="text-primary font-semibold">{classLabel}</span> · Spring Cohort Assessment Period
             </p>
           </div>
           {/* Action Buttons */}
@@ -293,21 +288,21 @@ export default function StudentsMasteryRoster() {
                 <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">High Mastery</span>
               </div>
               <div className="flex items-baseline gap-space-xs mt-1">
-                <span className="font-metric-number text-metric-number text-on-surface">{counts.high}</span>
+                <span className="font-metric-number text-metric-number text-on-surface tabular-nums">{counts.high}</span>
                 <span className="font-label-md text-label-md text-on-surface-variant">students</span>
               </div>
               <div className="flex items-center gap-1 font-body-sm text-body-sm text-secondary font-medium">
                 <span className="material-symbols-outlined text-[16px]">trending_up</span>
-                <span className="">{counts.all ? Math.round((counts.high / counts.all) * 100) : 0}% of class · ≥85% mastery</span>
+                <span className="tabular-nums">{counts.all ? Math.round((counts.high / counts.all) * 100) : 0}% of class · ≥85% mastery</span>
               </div>
             </div>
             {/* Progress Ring Visual */}
-            <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
+            <div aria-hidden="true" className="relative w-20 h-20 shrink-0 flex items-center justify-center">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
                 <path className="text-surface-container" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3.5"></path>
                 <path className="text-secondary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeDasharray={`${counts.all ? Math.round((counts.high / counts.all) * 100) : 0}, 100`} strokeLinecap="round" strokeWidth="3.5"></path>
               </svg>
-              <span className="absolute font-headline-sm text-headline-sm text-on-surface">{counts.all ? Math.round((counts.high / counts.all) * 100) : 0}%</span>
+              <span className="absolute font-headline-sm text-headline-sm text-on-surface tabular-nums">{counts.all ? Math.round((counts.high / counts.all) * 100) : 0}%</span>
             </div>
           </div>
           {/* Needs a Nudge */}
@@ -318,21 +313,21 @@ export default function StudentsMasteryRoster() {
                 <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Needs Practice</span>
               </div>
               <div className="flex items-baseline gap-space-xs mt-1">
-                <span className="font-metric-number text-metric-number text-on-surface">{counts.practice}</span>
+                <span className="font-metric-number text-metric-number text-on-surface tabular-nums">{counts.practice}</span>
                 <span className="font-label-md text-label-md text-on-surface-variant">students</span>
               </div>
               <div className="flex items-center gap-1 font-body-sm text-body-sm text-tertiary font-medium">
                 <span className="material-symbols-outlined text-[16px]">info</span>
-                <span className="">{counts.all ? Math.round((counts.practice / counts.all) * 100) : 0}% of class · Approaching the {threshold}% threshold</span>
+                <span className="tabular-nums">{counts.all ? Math.round((counts.practice / counts.all) * 100) : 0}% of class · Approaching the {threshold}% threshold</span>
               </div>
             </div>
             {/* Progress Ring Visual */}
-            <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
+            <div aria-hidden="true" className="relative w-20 h-20 shrink-0 flex items-center justify-center">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
                 <path className="text-surface-container" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3.5"></path>
                 <path className="text-tertiary-fixed-dim" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeDasharray={`${counts.all ? Math.round((counts.practice / counts.all) * 100) : 0}, 100`} strokeLinecap="round" strokeWidth="3.5"></path>
               </svg>
-              <span className="absolute font-headline-sm text-headline-sm text-on-surface">{counts.all ? Math.round((counts.practice / counts.all) * 100) : 0}%</span>
+              <span className="absolute font-headline-sm text-headline-sm text-on-surface tabular-nums">{counts.all ? Math.round((counts.practice / counts.all) * 100) : 0}%</span>
             </div>
           </div>
           {/* Needs Immediate Intervention */}
@@ -343,21 +338,21 @@ export default function StudentsMasteryRoster() {
                 <span className="font-label-md text-label-md text-error uppercase tracking-wider font-bold">Needs Intervention</span>
               </div>
               <div className="flex items-baseline gap-space-xs mt-1">
-                <span className="font-metric-number text-metric-number text-error">{counts.struggling}</span>
+                <span className="font-metric-number text-metric-number text-error tabular-nums">{counts.struggling}</span>
                 <span className="font-label-md text-label-md text-on-surface-variant">students</span>
               </div>
               <div className="flex items-center gap-1 font-body-sm text-body-sm text-error font-medium">
                 <span className="material-symbols-outlined text-[16px]">priority_high</span>
-                <span className="">{counts.all ? Math.round((counts.struggling / counts.all) * 100) : 0}% of class · Below {threshold}% threshold</span>
+                <span className="tabular-nums">{counts.all ? Math.round((counts.struggling / counts.all) * 100) : 0}% of class · Below {threshold}% threshold</span>
               </div>
             </div>
             {/* Progress Ring Visual */}
-            <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
+            <div aria-hidden="true" className="relative w-20 h-20 shrink-0 flex items-center justify-center">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
                 <path className="text-surface-container" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3.5"></path>
                 <path className="text-error" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeDasharray={`${counts.all ? Math.round((counts.struggling / counts.all) * 100) : 0}, 100`} strokeLinecap="round" strokeWidth="3.5"></path>
               </svg>
-              <span className="absolute font-headline-sm text-headline-sm text-error">{counts.all ? Math.round((counts.struggling / counts.all) * 100) : 0}%</span>
+              <span className="absolute font-headline-sm text-headline-sm text-error tabular-nums">{counts.all ? Math.round((counts.struggling / counts.all) * 100) : 0}%</span>
             </div>
           </div>
         </div>
@@ -371,7 +366,7 @@ export default function StudentsMasteryRoster() {
               <div className="flex flex-col md:flex-row gap-space-sm items-center justify-between">
                 <div className="relative w-full md:max-w-md">
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
-                  <input className="w-full bg-surface-container-low text-on-surface placeholder:text-on-surface-variant font-body-sm text-body-sm pl-10 pr-4 py-2.5 rounded-xl border-none focus:outline-none focus:ring-2 focus:ring-primary-container transition-all" placeholder="Filter by student name, email, or topic..." type="text" value={query} onChange={(e) => setQuery(e.target.value)} />
+                  <input aria-label="Filter students by name, email, or topic" className="w-full bg-surface-container-low text-on-surface placeholder:text-on-surface-variant font-body-sm text-body-sm pl-10 pr-4 py-2.5 rounded-xl border-none focus:outline-none focus:ring-2 focus:ring-primary-container transition-all" placeholder="Filter by student name, email, or topic..." type="text" value={query} onChange={(e) => setQuery(e.target.value)} />
                 </div>
                 {/* Subject selector dropdown */}
                 <div className="w-full md:w-auto flex items-center gap-space-xs self-stretch md:self-auto">
@@ -385,17 +380,17 @@ export default function StudentsMasteryRoster() {
                 </div>
               </div>
               {/* Filter Pills Carousel */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 text-label-sm font-label-sm">
-                <button className={activeFilter === 'all' ? pillActive : pillIdle} onClick={() => setActiveFilter('all')} type="button">All ({counts.all})</button>
-                <button className={activeFilter === 'high' ? pillActive : pillIdle} onClick={() => setActiveFilter('high')} type="button">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 text-label-sm font-label-sm" role="group" aria-label="Filter roster by mastery status">
+                <button aria-pressed={activeFilter === 'all'} className={activeFilter === 'all' ? pillActive : pillIdle} onClick={() => setActiveFilter('all')} type="button">All ({counts.all})</button>
+                <button aria-pressed={activeFilter === 'high'} className={activeFilter === 'high' ? pillActive : pillIdle} onClick={() => setActiveFilter('high')} type="button">
                   <span className="w-2 h-2 rounded-full bg-secondary"></span>
                   High Mastery ({counts.high})
                 </button>
-                <button className={activeFilter === 'practice' ? pillActive : pillIdle} onClick={() => setActiveFilter('practice')} type="button">
+                <button aria-pressed={activeFilter === 'practice'} className={activeFilter === 'practice' ? pillActive : pillIdle} onClick={() => setActiveFilter('practice')} type="button">
                   <span className="w-2 h-2 rounded-full bg-tertiary-fixed-dim"></span>
                   Needs Practice ({counts.practice})
                 </button>
-                <button className={activeFilter === 'struggling' ? pillActive : pillIdle} onClick={() => setActiveFilter('struggling')} type="button">
+                <button aria-pressed={activeFilter === 'struggling'} className={activeFilter === 'struggling' ? pillActive : pillIdle} onClick={() => setActiveFilter('struggling')} type="button">
                   <span className="w-2 h-2 rounded-full bg-error"></span>
                   Struggling ({counts.struggling})
                 </button>
@@ -408,13 +403,13 @@ export default function StudentsMasteryRoster() {
                 <table className="w-full min-w-[900px] text-left border-collapse">
                   <thead>
                     <tr className="bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
-                      <th className="py-3 px-4">Student &amp; ID</th>
-                      <th className="py-3 px-3">Status</th>
-                      <th className="py-3 px-3">Overall</th>
-                      <th className="py-3 px-3 min-w-[140px]">Coding Topic Mastery</th>
-                      <th className="py-3 px-3">AI Diagnostic Intervention</th>
-                      <th className="py-3 px-3 text-center">Signal</th>
-                      <th className="py-3 px-4 text-right">Actions</th>
+                      <th className="py-3 px-4" scope="col">Student &amp; ID</th>
+                      <th className="py-3 px-3" scope="col">Status</th>
+                      <th className="py-3 px-3" scope="col">Overall</th>
+                      <th className="py-3 px-3 min-w-[140px]" scope="col">Coding Topic Mastery</th>
+                      <th className="py-3 px-3" scope="col">AI Diagnostic Intervention</th>
+                      <th className="py-3 px-3 text-center" scope="col">Signal</th>
+                      <th className="py-3 px-4 text-right" scope="col">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-surface-container font-body-sm text-body-sm text-on-surface">
@@ -438,7 +433,7 @@ export default function StudentsMasteryRoster() {
                               </div>
                               <div className="flex flex-col min-w-0">
                                 <span className={`font-label-lg text-label-lg truncate ${isSelected ? 'text-primary font-bold' : 'text-on-surface font-semibold'}`}>{student.fullName}</span>
-                                <span className="font-label-sm text-label-sm text-on-surface-variant">ID: STU-{student.studentId} · {student.lastActive}</span>
+                                <span className="font-label-sm text-label-sm text-on-surface-variant tabular-nums">ID: STU-{student.studentId} · {student.lastActive}</span>
                               </div>
                             </div>
                           </td>
@@ -446,12 +441,12 @@ export default function StudentsMasteryRoster() {
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full font-label-sm text-label-sm font-bold ${meta.pill}`}>{meta.label}</span>
                           </td>
                           <td className="py-3.5 px-3">
-                            <span className={`font-headline-sm text-headline-sm font-extrabold ${meta.text}`}>{student.score}%</span>
+                            <span className={`font-headline-sm text-headline-sm font-extrabold tabular-nums ${meta.text}`}>{student.score}%</span>
                           </td>
                           <td className="py-3.5 px-3">
                             {topTopics.length ? (
                               <div className="flex flex-col gap-1 w-32">
-                                <div className="flex items-center justify-between text-[10px] text-on-surface-variant gap-1">
+                                <div className="flex items-center justify-between text-[10px] text-on-surface-variant gap-1 tabular-nums">
                                   {topTopics.map((topic) => (
                                     <span key={topic.conceptId ?? topic.concept} title={`${topic.concept}: ${topic.pct}%`}>
                                       {abbreviateConcept(topic.concept)}: {topic.pct}%
@@ -487,18 +482,20 @@ export default function StudentsMasteryRoster() {
                               </p>
                             </div>
                           </td>
-                          <td className="py-3.5 px-3 text-center text-lg" title={meta.label}>
-                            {meta.icon}
+                          <td className="py-3.5 px-3 text-center" title={meta.label}>
+                            <span aria-label={meta.label} className={`material-symbols-outlined text-[20px] ${meta.text}`}>
+                              {meta.icon}
+                            </span>
                           </td>
                           <td className="py-3.5 px-4 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-1">
-                              <button className={`${rowActionBtn} text-primary`} onClick={(event) => { event.stopPropagation(); notify('Remedial assignment is not available in this version.') }} title="Assign Remedial Practice" type="button">
+                              <button aria-label={`Assign remedial practice to ${student.fullName}`} className={`${rowActionBtn} text-primary`} onClick={(event) => { event.stopPropagation(); notify('Remedial assignment is not available in this version.') }} title="Assign Remedial Practice" type="button">
                                 <span className="material-symbols-outlined text-[18px]">assignment_turned_in</span>
                               </button>
-                              <button className={`${rowActionBtn} text-on-surface-variant`} onClick={(event) => { event.stopPropagation(); notify('Direct messaging is not available in this version.') }} title="Send Coding Hint" type="button">
+                              <button aria-label={`Send coding hint to ${student.fullName}`} className={`${rowActionBtn} text-on-surface-variant`} onClick={(event) => { event.stopPropagation(); notify('Direct messaging is not available in this version.') }} title="Send Coding Hint" type="button">
                                 <span className="material-symbols-outlined text-[18px]">send</span>
                               </button>
-                              <button className={`${rowActionBtn} text-on-surface-variant`} onClick={(event) => { event.stopPropagation(); setSelectedId(student.studentId) }} title="View student details" type="button">
+                              <button aria-label={`View details for ${student.fullName}`} className={`${rowActionBtn} text-on-surface-variant`} onClick={(event) => { event.stopPropagation(); setSelectedId(student.studentId) }} title="View student details" type="button">
                                 <span className="material-symbols-outlined text-[18px]">visibility</span>
                               </button>
                             </div>
@@ -525,14 +522,14 @@ export default function StudentsMasteryRoster() {
               {/* Pagination / Masterlist Summary Bar */}
               <div className="p-space-md bg-surface-container-low flex flex-col sm:flex-row items-center justify-between gap-space-sm text-on-surface-variant font-body-sm text-body-sm">
                 <div className="flex items-center gap-space-sm">
-                  <span className="">Showing <strong className="text-on-surface">{totalStudents ? `${showingFrom} - ${showingTo}` : '0'}</strong> of {totalStudents} students</span>
+                  <span className="tabular-nums">Showing <strong className="text-on-surface">{totalStudents ? `${showingFrom} - ${showingTo}` : '0'}</strong> of {totalStudents} students</span>
                   <span className="text-outline-variant">·</span>
-                  <span className="text-xs">{counts.struggling} learners below the {threshold}% intervention threshold</span>
+                  <span className="text-xs tabular-nums">{counts.struggling} learners below the {threshold}% intervention threshold</span>
                 </div>
                 <div className="flex items-center gap-1 font-label-md text-label-md">
                   <button className="px-2.5 py-1 rounded-lg bg-surface-container text-on-surface-variant disabled:opacity-50" disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))} type="button">Previous</button>
                   {pageNumbers.map((pageNumber) => (
-                    <button key={pageNumber} className={pageNumber === currentPage ? 'px-3 py-1 rounded-lg bg-primary-container text-on-primary font-bold' : 'px-3 py-1 rounded-lg hover:bg-surface-container text-on-surface'} onClick={() => setPage(pageNumber)} type="button">{pageNumber}</button>
+                    <button key={pageNumber} aria-current={pageNumber === currentPage ? 'page' : undefined} className={pageNumber === currentPage ? 'px-3 py-1 rounded-lg bg-primary-container text-on-primary font-bold tabular-nums' : 'px-3 py-1 rounded-lg hover:bg-surface-container text-on-surface tabular-nums'} onClick={() => setPage(pageNumber)} type="button">{pageNumber}</button>
                   ))}
                   <button className="px-2.5 py-1 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-50" disabled={currentPage === totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))} type="button">Next</button>
                 </div>
@@ -570,7 +567,7 @@ export default function StudentsMasteryRoster() {
                     {panelMastery.slice(0, 4).map((topic) => (
                       <div key={topic.conceptId ?? topic.concept} className="flex flex-col p-2 bg-surface-container-lowest rounded-lg">
                         <span className="font-label-sm text-label-sm text-on-surface-variant truncate" title={topic.concept}>{topic.concept}</span>
-                        <span className={`font-headline-sm text-headline-sm ${masteryTextClass(topic.pct)}`}>{topic.pct}%</span>
+                        <span className={`font-headline-sm text-headline-sm tabular-nums ${masteryTextClass(topic.pct)}`}>{topic.pct}%</span>
                         <span className="text-[10px] text-on-surface-variant">Updated {formatWhen(topic.lastUpdated)}</span>
                       </div>
                     ))}
@@ -590,7 +587,7 @@ export default function StudentsMasteryRoster() {
                       {latestFeedback?.generatedAt ? formatWhen(latestFeedback.generatedAt) : 'Live from mastery data'}
                     </span>
                   </div>
-                  <p className="font-body-sm text-body-sm text-on-surface leading-relaxed italic bg-surface-container-lowest/80 p-2.5 rounded-lg">
+                  <p className="font-body-sm text-body-sm text-on-surface leading-relaxed bg-surface-container-lowest/80 p-2.5 rounded-lg">
                     {aiSummary}
                   </p>
                   <div className="flex flex-col gap-1 pt-1">
@@ -620,13 +617,13 @@ export default function StudentsMasteryRoster() {
                 {/* Teacher Private Observation Notes */}
                 <div className="flex flex-col gap-space-xs pt-space-xs">
                   <div className="flex items-center justify-between">
-                    <span className="font-label-md text-label-md text-on-surface font-semibold flex items-center gap-1">
+                    <label className="font-label-md text-label-md text-on-surface font-semibold flex items-center gap-1" htmlFor="teacherPrivateNote">
                       <span className="material-symbols-outlined text-[16px] text-on-surface-variant">edit_note</span>
                       Teacher Log (Private)
-                    </span>
+                    </label>
                     <span className="text-[11px] text-on-surface-variant font-label-sm">Local only</span>
                   </div>
-                  <textarea className="w-full bg-surface-container-low text-on-surface placeholder:text-on-surface-variant font-body-sm text-body-sm p-3 rounded-xl border-none focus:outline-none focus:ring-2 focus:ring-primary-container transition-all resize-none" placeholder="Confidential observations on code trace capability, debug sessions..." rows={3} value={note} onChange={(e) => setNote(e.target.value)}></textarea>
+                  <textarea className="w-full bg-surface-container-low text-on-surface placeholder:text-on-surface-variant font-body-sm text-body-sm p-3 rounded-xl border-none focus:outline-none focus:ring-2 focus:ring-primary-container transition-all resize-none" id="teacherPrivateNote" placeholder="Confidential observations on code trace capability, debug sessions..." rows={3} value={note} onChange={(e) => setNote(e.target.value)}></textarea>
                   <div className="flex items-center justify-between mt-1">
                     <span className="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
                       <span className="material-symbols-outlined text-[14px]">sync_problem</span>
@@ -664,10 +661,12 @@ export default function StudentsMasteryRoster() {
 
       {/* Floating Toast Confirmation */}
       <div
+        aria-live="polite"
         className={
           'fixed bottom-6 right-6 z-50 transform transition-all duration-300 flex items-center gap-space-sm bg-inverse-surface text-inverse-on-surface px-space-lg py-3 rounded-xl shadow-xl max-w-md ' +
           (toast ? '' : 'translate-y-24 opacity-0 pointer-events-none')
         }
+        role="status"
       >
         <span className="material-symbols-outlined text-secondary-fixed text-[20px]" style={iconFill}>info</span>
         <span className="font-label-md text-label-md">{toast}</span>

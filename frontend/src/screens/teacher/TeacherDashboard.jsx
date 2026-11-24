@@ -56,37 +56,37 @@ function conceptVisual(concept, index) {
   const key = name.toLowerCase()
   const pct = Math.max(0, Math.min(100, Math.round(Number(concept?.masteryLevel) || 0)))
 
-  let emoji = '📘'
+  let icon = 'menu_book'
   let category = 'Syntax'
-  let emojiColor = 'text-primary'
+  let iconColor = 'text-primary'
   let barColor = 'bg-primary-container'
 
   if (/loop|iterat|while|for /.test(key)) {
-    emoji = '🔁'
+    icon = 'repeat'
     category = 'Logic'
   } else if (/condition|boolean|branch|if /.test(key)) {
-    emoji = '🔀'
+    icon = 'alt_route'
     category = 'Logic'
   } else if (/function|scope|return/.test(key)) {
-    emoji = '⚙️'
+    icon = 'functions'
     category = 'Functions'
-    emojiColor = 'text-secondary'
+    iconColor = 'text-secondary'
   } else if (/syntax|error|debug|variable|data type/.test(key)) {
-    emoji = '🐛'
+    icon = 'bug_report'
     category = 'Syntax'
-    emojiColor = 'text-tertiary'
+    iconColor = 'text-tertiary'
   }
 
   if (pct >= 80) {
     barColor = 'bg-[#22A06B]'
   } else if (pct < 70) {
-    emojiColor = 'text-tertiary'
+    iconColor = 'text-tertiary'
     barColor = 'bg-tertiary-fixed-dim'
   }
 
   return {
-    emoji,
-    emojiColor,
+    icon,
+    iconColor,
     name,
     category,
     pct,
@@ -216,6 +216,15 @@ export default function TeacherDashboard() {
 
   useEffect(() => () => clearTimeout(toastTimer.current), [])
 
+  useEffect(() => {
+    if (!modalStudent) return
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') closeStudentModal()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [modalStudent])
+
   function showToast(message) {
     setToast(message)
     clearTimeout(toastTimer.current)
@@ -237,11 +246,11 @@ export default function TeacherDashboard() {
   function sendTeacherNote() {
     const name = modalStudent.name
     closeStudentModal()
-    showToast(`Encouragement sent to ${name} & parents portal! 🚀`)
+    showToast(`Encouragement sent to ${name} & parents portal.`)
   }
 
   function sendCodeHint(name) {
-    showToast(`Code hint sent to ${name} ✉️`)
+    showToast(`Code hint sent to ${name}.`)
   }
 
   async function runExport(kind) {
@@ -252,7 +261,7 @@ export default function TeacherDashboard() {
       const { blob, filename } =
         kind === 'pdf' ? await api.teacher.exportPdf(query) : await api.teacher.exportCsv(query)
       saveBlob(blob, filename || `aralytics-cohort.${kind}`)
-      showToast(`Cohort ${kind.toUpperCase()} exported ✅`)
+      showToast(`Cohort ${kind.toUpperCase()} exported.`)
     } catch (error) {
       showToast(error.message || `Could not export the ${kind.toUpperCase()}.`)
     } finally {
@@ -306,18 +315,16 @@ export default function TeacherDashboard() {
         {/* Top Greeting & Action Header */}
         <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-space-md mb-space-lg">
           <div className="flex flex-col">
-            <div className="flex items-center gap-space-xs mb-1">
-              <span className="font-headline-lg text-headline-lg text-on-surface">Welcome back, {firstName}!</span>
-              <span className="text-2xl animate-bounce">💻</span>
-            </div>
-            <p className="font-body-md text-body-md text-on-surface-variant">Here is your coding cohort analytics for <span className="font-semibold text-on-surface">{classLabel}</span>. <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-error-container/50 text-error font-label-sm text-label-sm font-medium">{belowThresholdCount} students flagged (&lt;{threshold}% threshold)</span></p>
+            <h1 className="font-headline-lg text-headline-lg text-on-surface tracking-tight mb-1">
+              Welcome back, {firstName}!
+            </h1>
+            <p className="font-body-md text-body-md text-on-surface-variant">Here is your coding cohort analytics for <span className="font-semibold text-on-surface">{classLabel}</span>. <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-error-container/50 text-error font-label-sm text-label-sm font-medium tabular-nums">{belowThresholdCount} students flagged (&lt;{threshold}% threshold)</span></p>
           </div>
           {/* Quick Controls */}
           <div className="flex flex-wrap items-center gap-space-xs">
-            <div className="relative inline-flex items-center bg-surface-container-lowest px-space-md py-2 rounded-xl shadow-sm text-on-surface cursor-pointer hover:bg-surface-container-low transition-colors">
+            <div className="inline-flex items-center bg-surface-container-low px-space-md py-2 rounded-xl text-on-surface">
               <span className="material-symbols-outlined text-primary text-[18px] mr-1.5">calendar_today</span>
               <span className="font-label-md text-label-md">Unit 4: Loops &amp; Functions (Week 6)</span>
-              <span className="material-symbols-outlined text-[18px] ml-1 text-on-surface-variant">expand_more</span>
             </div>
             <button
               className="inline-flex items-center gap-1.5 bg-surface-container-lowest px-space-md py-2 rounded-xl shadow-sm text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors disabled:opacity-60"
@@ -339,7 +346,7 @@ export default function TeacherDashboard() {
             </button>
             <button
               className="inline-flex items-center gap-1.5 bg-primary-container text-on-primary px-space-md py-2 rounded-xl shadow-md hover:bg-primary transition-all"
-              onClick={() => showToast(`Generating AI code diagnostics for ${classLabel} ✨`)}
+              onClick={() => showToast(`Generating AI code diagnostics for ${classLabel}.`)}
               type="button"
             >
               <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
@@ -370,7 +377,7 @@ export default function TeacherDashboard() {
               </div>
             </div>
             <div className="flex items-baseline gap-space-xs mb-space-xs">
-              <span className="font-metric-number text-metric-number text-on-surface tracking-tight">{formatMetric(dashboard.data?.classAverage)}</span>
+              <span className="font-metric-number text-metric-number text-on-surface tracking-tight tabular-nums">{formatMetric(dashboard.data?.classAverage)}</span>
             </div>
             <div className="flex items-center gap-1.5 text-body-sm">
               <span className="inline-flex items-center font-label-sm text-[#22A06B] font-semibold">
@@ -388,8 +395,8 @@ export default function TeacherDashboard() {
               </div>
             </div>
             <div className="flex items-baseline gap-space-xs mb-space-xs">
-              <span className="font-metric-number text-metric-number text-on-surface tracking-tight">{formatMetric(dashboard.data?.completionRate)}</span>
-              <span className="font-body-sm text-body-sm text-on-surface-variant">({studentCount} learners)</span>
+              <span className="font-metric-number text-metric-number text-on-surface tracking-tight tabular-nums">{formatMetric(dashboard.data?.completionRate)}</span>
+              <span className="font-body-sm text-body-sm text-on-surface-variant tabular-nums">({studentCount} learners)</span>
             </div>
             <div className="flex items-center gap-1.5 text-body-sm">
               <span className="inline-flex items-center font-label-sm text-[#22A06B] font-semibold">
@@ -407,7 +414,7 @@ export default function TeacherDashboard() {
               </div>
             </div>
             <div className="flex items-baseline gap-space-xs mb-space-xs">
-              <span className="font-metric-number text-metric-number text-error tracking-tight">{belowThresholdCount}</span>
+              <span className="font-metric-number text-metric-number text-error tracking-tight tabular-nums">{belowThresholdCount}</span>
               <span className="font-body-md text-body-md text-on-surface-variant">students</span>
             </div>
             <div className="flex items-center justify-between text-body-sm">
@@ -426,7 +433,7 @@ export default function TeacherDashboard() {
               </div>
             </div>
             <div className="flex items-baseline gap-space-xs mb-space-xs">
-              <span className="font-metric-number text-metric-number text-on-surface tracking-tight">{studentCount}</span>
+              <span className="font-metric-number text-metric-number text-on-surface tracking-tight tabular-nums">{studentCount}</span>
               <span className="font-body-sm text-body-sm text-on-surface-variant">enrolled</span>
             </div>
             <div className="flex items-center justify-between text-body-sm text-on-surface-variant">
@@ -463,7 +470,7 @@ export default function TeacherDashboard() {
               <p className="font-body-sm text-body-sm text-on-surface-variant mb-space-md">Real-time risk triage breakdown</p>
               {/* SVG Donut Chart with Centered Total */}
               <div className="relative flex items-center justify-center my-2">
-                <svg className="w-44 h-44 -rotate-90" viewBox="0 0 100 100">
+                <svg aria-label={`Cohort status distribution: ${studentCount} learners`} className="w-44 h-44 -rotate-90" role="img" viewBox="0 0 100 100">
                   {/* Background circle ring */}
                   <circle cx="50" cy="50" fill="none" r="38" stroke="#EDECFF" strokeWidth="12" />
                   {/* Live risk segments derived from /api/teacher/students */}
@@ -483,7 +490,7 @@ export default function TeacherDashboard() {
                   ))}
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                  <span className="font-headline-lg text-headline-lg text-on-surface font-black leading-none">{studentCount}</span>
+                  <span className="font-headline-lg text-headline-lg text-on-surface font-black leading-none tabular-nums">{studentCount}</span>
                   <span className="font-label-sm text-label-sm text-on-surface-variant mt-1">Enrolled</span>
                 </div>
               </div>
@@ -503,7 +510,7 @@ export default function TeacherDashboard() {
                         {segment.label}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5 font-label-md text-label-md text-on-surface">
+                    <div className="flex items-center gap-1.5 font-label-md text-label-md text-on-surface tabular-nums">
                       <span className={segment.value === 'needs-help' ? 'font-semibold text-error' : 'font-semibold'}>
                         {segment.count}
                       </span>
@@ -532,9 +539,10 @@ export default function TeacherDashboard() {
                   <h3 className="font-headline-sm text-headline-sm text-on-surface">Mastery by CS Concept</h3>
                   <p className="font-body-sm text-body-sm text-on-surface-variant">Class pass rate across Python fundamentals</p>
                 </div>
-                <div className="flex items-center gap-1 overflow-x-auto pb-1">
+                <div className="flex items-center gap-1 overflow-x-auto pb-1" role="group" aria-label="Filter concepts by category">
                   {MASTERY_FILTERS.map((f) => (
                     <button
+                      aria-pressed={masteryFilter === f.value}
                       className={masteryFilter === f.value ? MASTERY_PILL_ACTIVE : MASTERY_PILL_IDLE}
                       key={f.value}
                       onClick={() => setMasteryFilter(f.value)}
@@ -551,10 +559,12 @@ export default function TeacherDashboard() {
                   <div key={topic.name}>
                     <div className="flex items-center justify-between mb-1.5">
                       <div className="flex items-center gap-2">
-                        <span className={`w-6 h-6 rounded-lg bg-surface-container flex items-center justify-center ${topic.emojiColor} text-[14px]`}>{topic.emoji}</span>
+                        <span className={`w-6 h-6 rounded-lg bg-surface-container flex items-center justify-center ${topic.iconColor}`}>
+                          <span className="material-symbols-outlined text-[16px]">{topic.icon}</span>
+                        </span>
                         <span className="font-label-md text-label-md text-on-surface">{topic.name}</span>
                       </div>
-                      <span className={`font-label-md text-label-md ${topic.pctColor} font-bold`}>{topic.pct}%</span>
+                      <span className={`font-label-md text-label-md ${topic.pctColor} font-bold tabular-nums`}>{topic.pct}%</span>
                     </div>
                     <div className="w-full h-3 bg-surface-container-low rounded-full overflow-hidden">
                       <div className={`h-full ${topic.barColor} rounded-full transition-all duration-500`} style={{ width: `${topic.pct}%` }} />
@@ -593,6 +603,7 @@ export default function TeacherDashboard() {
               <div className="relative min-w-[220px]">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
                 <input
+                  aria-label="Filter students by name"
                   className="w-full bg-surface-container-low text-on-surface placeholder:text-on-surface-variant font-body-sm text-body-sm pl-9 pr-3 py-1.5 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-primary-container"
                   onChange={(e) => setStudentSearch(e.target.value)}
                   placeholder="Filter by student name..."
@@ -601,9 +612,10 @@ export default function TeacherDashboard() {
                 />
               </div>
               {/* Filter Pill Tabs */}
-              <div className="flex items-center bg-surface-container p-1 rounded-xl">
+              <div className="flex items-center bg-surface-container p-1 rounded-xl" role="group" aria-label="Filter directory by mastery status">
                 {rosterFilters.map((f) => (
                   <button
+                    aria-pressed={rosterFilter === f.value}
                     className={rosterFilter === f.value ? FILTER_TAB_ACTIVE : FILTER_TAB_IDLE}
                     key={f.value}
                     onClick={() => setRosterFilter(f.value)}
@@ -627,16 +639,16 @@ export default function TeacherDashboard() {
             <table className="w-full min-w-[760px] text-left font-body-sm text-body-sm">
               <thead>
                 <tr className="text-on-surface-variant bg-surface-container-low text-[12px] uppercase tracking-wider font-semibold">
-                  <th className="py-3 px-4 rounded-l-xl">Learner Name &amp; ID</th>
-                  <th className="py-3 px-3">Section</th>
-                  <th className="py-3 px-4">Latest Score</th>
-                  <th className="py-3 px-3">Trend</th>
-                  <th className="py-3 px-4">Mastery Status</th>
-                  <th className="py-3 px-3">Last Active</th>
-                  <th className="py-3 px-4 rounded-r-xl text-right">Quick Action</th>
+                  <th className="py-3 px-4 rounded-l-xl" scope="col">Learner Name &amp; ID</th>
+                  <th className="py-3 px-3" scope="col">Section</th>
+                  <th className="py-3 px-4" scope="col">Latest Score</th>
+                  <th className="py-3 px-3" scope="col">Trend</th>
+                  <th className="py-3 px-4" scope="col">Mastery Status</th>
+                  <th className="py-3 px-3" scope="col">Last Active</th>
+                  <th className="py-3 px-4 rounded-r-xl text-right" scope="col">Quick Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y-0 text-on-surface">
+              <tbody className="divide-y divide-surface-container text-on-surface">
                 {pagedStudents.map((s) => (
                   <tr className="hover:bg-surface-container-low/50 transition-colors" key={s.id}>
                     <td className="py-3.5 px-4">
@@ -644,14 +656,14 @@ export default function TeacherDashboard() {
                         <div className="w-8 h-8 rounded-full bg-surface-container text-on-surface flex items-center justify-center font-bold text-xs shrink-0">{s.initials}</div>
                         <div>
                           <span className="font-label-md text-label-md text-on-surface font-semibold block">{s.name}</span>
-                          <span className="font-label-sm text-label-sm text-on-surface-variant">{s.id}</span>
+                          <span className="font-label-sm text-label-sm text-on-surface-variant tabular-nums">{s.id}</span>
                         </div>
                       </div>
                     </td>
                     <td className="py-3.5 px-3 text-on-surface-variant">{s.section}</td>
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-2">
-                        <span className={`font-semibold ${s.scoreColor} w-8`}>{s.score}%</span>
+                        <span className={`font-semibold tabular-nums ${s.scoreColor} w-8`}>{s.score}%</span>
                         <div className="w-16 h-1.5 bg-surface-container rounded-full overflow-hidden">
                           <div className={`h-full ${s.barColor} rounded-full`} style={{ width: `${s.score}%` }} />
                         </div>
@@ -665,10 +677,11 @@ export default function TeacherDashboard() {
                         <span className={`w-1.5 h-1.5 rounded-full ${s.statusDot}`} /> {s.statusLabel}
                       </span>
                     </td>
-                    <td className="py-3.5 px-3 text-on-surface-variant font-label-sm text-label-sm">{s.lastActive}</td>
+                    <td className="py-3.5 px-3 text-on-surface-variant font-label-sm text-label-sm tabular-nums">{s.lastActive}</td>
                     <td className="py-3.5 px-4 text-right">
                       <div className="inline-flex items-center gap-1">
                         <button
+                          aria-label={`${s.mailTitle} to ${s.name}`}
                           className="p-1.5 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors"
                           onClick={() => sendCodeHint(s.name)}
                           title={s.mailTitle}
@@ -705,13 +718,14 @@ export default function TeacherDashboard() {
           </div>
           {/* Pagination Footer */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-space-sm pt-space-md mt-space-sm">
-            <span className="font-body-sm text-body-sm text-on-surface-variant">
+            <span className="font-body-sm text-body-sm text-on-surface-variant tabular-nums">
               {totalStudents === 0
                 ? 'Showing 0 students'
                 : `Showing ${showingFrom} to ${showingTo} of ${totalStudents} students`}
             </span>
             <div className="flex items-center gap-1">
               <button
+                aria-label="Previous page"
                 className="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface disabled:opacity-50"
                 disabled={currentPage <= 1}
                 onClick={() => setPage((value) => Math.max(1, value - 1))}
@@ -721,10 +735,11 @@ export default function TeacherDashboard() {
               </button>
               {pageNumbers.map((pageNumber) => (
                 <button
+                  aria-current={pageNumber === currentPage ? 'page' : undefined}
                   className={
                     pageNumber === currentPage
-                      ? 'w-8 h-8 rounded-lg bg-primary-container text-on-primary font-label-sm text-label-sm font-bold'
-                      : 'w-8 h-8 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-sm text-label-sm'
+                      ? 'w-8 h-8 rounded-lg bg-primary-container text-on-primary font-label-sm text-label-sm font-bold tabular-nums'
+                      : 'w-8 h-8 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-sm text-label-sm tabular-nums'
                   }
                   key={pageNumber}
                   onClick={() => setPage(pageNumber)}
@@ -734,6 +749,7 @@ export default function TeacherDashboard() {
                 </button>
               ))}
               <button
+                aria-label="Next page"
                 className="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-on-surface hover:text-primary disabled:opacity-50 disabled:hover:text-on-surface"
                 disabled={currentPage >= totalPages}
                 onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
@@ -747,7 +763,15 @@ export default function TeacherDashboard() {
       </div>
       {/* INTERACTIVE MODAL / DETAIL PREVIEW: Student Diagnostic Drilldown */}
       {modalStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-inverse-surface/40 backdrop-blur-sm transition-opacity duration-200">
+        <div
+          aria-labelledby="student-modal-title"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-inverse-surface/40 backdrop-blur-sm transition-opacity duration-200"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) closeStudentModal()
+          }}
+          role="dialog"
+        >
           <div className="bg-surface-container-lowest rounded-[24px] max-w-lg w-full p-space-lg shadow-[0_20px_40px_rgba(31,35,64,0.16)] flex flex-col gap-space-md relative transform transition-transform duration-200 scale-100">
             {/* Modal Header */}
             <div className="flex items-start justify-between pb-space-sm">
@@ -757,13 +781,13 @@ export default function TeacherDashboard() {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="font-headline-sm text-headline-sm text-on-surface">{modalStudent.name}</h3>
+                    <h3 className="font-headline-sm text-headline-sm text-on-surface" id="student-modal-title">{modalStudent.name}</h3>
                     <span className={`px-2 py-0.5 rounded-full font-label-sm text-label-sm font-bold ${modalStudent.status.includes('Help') ? 'bg-[#FDE4E5] text-[#E5484D]' : modalStudent.status.includes('Nudge') ? 'bg-[#FFEFD1] text-[#B8740B]' : 'bg-[#DDF5E8] text-[#22A06B]'}`}>{modalStudent.status}</span>
                   </div>
                   <p className="font-body-sm text-body-sm text-on-surface-variant">CS 101: Intro to Python · Student ID: {modalStudent.id}</p>
                 </div>
               </div>
-              <button className="w-8 h-8 rounded-full bg-surface-container hover:bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:text-on-surface" onClick={closeStudentModal} type="button">
+              <button aria-label="Close modal" className="w-8 h-8 rounded-full bg-surface-container hover:bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:text-on-surface" onClick={closeStudentModal} type="button">
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
@@ -781,7 +805,7 @@ export default function TeacherDashboard() {
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className="p-2.5 bg-surface-container rounded-xl">
                 <span className="font-label-sm text-label-sm text-on-surface-variant block">Recent Score</span>
-                <span className={`font-headline-sm text-headline-sm ${modalStudent.status.includes('Help') ? 'text-error' : modalStudent.status.includes('Nudge') ? 'text-tertiary' : 'text-[#22A06B]'} font-bold`}>{modalStudent.score}</span>
+                <span className={`font-headline-sm text-headline-sm tabular-nums ${modalStudent.status.includes('Help') ? 'text-error' : modalStudent.status.includes('Nudge') ? 'text-tertiary' : 'text-[#22A06B]'} font-bold`}>{modalStudent.score}</span>
               </div>
               <div className="p-2.5 bg-surface-container rounded-xl">
                 <span className="font-label-sm text-label-sm text-on-surface-variant block">Avg Duration</span>
@@ -817,7 +841,7 @@ export default function TeacherDashboard() {
       )}
       {/* Notification Toast (for quick interactions) */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 transform translate-y-0 opacity-100 transition-all duration-300 pointer-events-none">
+        <div className="fixed bottom-6 right-6 z-50 transform translate-y-0 opacity-100 transition-all duration-300 pointer-events-none" role="status" aria-live="polite">
           <div className="bg-inverse-surface text-inverse-on-surface px-space-md py-3 rounded-xl shadow-xl flex items-center gap-2">
             <span className="material-symbols-outlined text-[#71F8E4] text-[20px]">check_circle</span>
             <span className="font-label-md text-label-md">{toast}</span>

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api, getStoredClasses } from '../../api/client'
 import { useApiResource } from '../../api/useApiResource'
 import { DataError, EmptyBlock, LoadingBlock } from '../../components/DataState'
@@ -66,6 +66,15 @@ export default function ActivitiesQuizManagement() {
   const toastTimer = useRef(null)
 
   const list = Array.isArray(activities.data) ? activities.data : []
+
+  useEffect(() => {
+    if (!drawer) return
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') closeDrawer()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [drawer])
 
   function notify(message) {
     setToast(message)
@@ -199,10 +208,6 @@ export default function ActivitiesQuizManagement() {
       <div className="w-full max-w-[1120px] mx-auto px-space-md lg:px-space-lg py-space-lg flex flex-col gap-space-lg">
         <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-space-lg">
           <div className="flex flex-col gap-space-xs max-w-xl">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 w-fit rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm">
-              <span className="material-symbols-outlined text-[15px]">code</span>
-              Coding Activities
-            </span>
             <h1 className="font-headline-lg text-headline-lg text-on-surface tracking-tight">
               Coding Activities &amp; Quizzes
             </h1>
@@ -220,13 +225,14 @@ export default function ActivitiesQuizManagement() {
           </button>
         </div>
 
-        <div className="flex items-center p-1 rounded-full bg-surface-container gap-1 overflow-x-auto w-fit max-w-full">
+        <div className="flex items-center p-1 rounded-full bg-surface-container gap-1 overflow-x-auto w-fit max-w-full" role="group" aria-label="Filter activities by status">
           {STATUS_FILTERS.map((filter) => (
             <button
               key={filter.value}
+              aria-pressed={status === filter.value}
               className={`px-space-md py-1.5 rounded-full font-label-md text-label-md transition-colors shrink-0 ${
                 status === filter.value
-                  ? 'bg-surface-container-lowest text-primary shadow-xs'
+                  ? 'bg-surface-container-lowest text-primary shadow-xs font-semibold'
                   : 'text-on-surface-variant hover:text-on-surface'
               }`}
               onClick={() => setStatus(filter.value)}
@@ -275,7 +281,7 @@ export default function ActivitiesQuizManagement() {
                       {activity.description || 'No description.'}
                     </p>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 font-label-sm text-label-sm text-on-surface-variant">
+                  <div className="flex flex-wrap items-center gap-2 font-label-sm text-label-sm text-on-surface-variant tabular-nums">
                     <span>{activity.questionCount} Questions</span>
                     <span>•</span>
                     <span>{activity.totalPoints} Points</span>
@@ -297,6 +303,7 @@ export default function ActivitiesQuizManagement() {
                 </div>
                 <div className="flex items-center justify-between gap-space-sm">
                   <button
+                    aria-label={`Edit ${activity.title}`}
                     className="p-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors disabled:opacity-40"
                     disabled={activity.status !== 'DRAFT'}
                     onClick={() => openEdit(activity)}
@@ -329,18 +336,22 @@ export default function ActivitiesQuizManagement() {
 
       {drawer && (
         <div
+          aria-labelledby="activity-drawer-title"
+          aria-modal="true"
           className="fixed inset-0 bg-inverse-surface/40 backdrop-blur-xs z-50"
           onClick={(event) => {
             if (event.target === event.currentTarget) closeDrawer()
           }}
+          role="dialog"
         >
           <div className="absolute right-0 top-0 h-full w-full max-w-lg bg-surface-container-lowest shadow-2xl p-space-xl flex flex-col justify-between overflow-y-auto">
             <div className="flex flex-col gap-space-lg">
               <div className="flex items-center justify-between">
-                <h2 className="font-headline-sm text-headline-sm text-on-surface">
+                <h2 className="font-headline-sm text-headline-sm text-on-surface" id="activity-drawer-title">
                   {drawer.mode === 'create' ? 'Create Activity Draft' : 'Edit Draft Details'}
                 </h2>
                 <button
+                  aria-label="Close drawer"
                   className="p-2 rounded-xl text-on-surface-variant hover:bg-surface-container"
                   onClick={closeDrawer}
                   type="button"
@@ -350,7 +361,7 @@ export default function ActivitiesQuizManagement() {
               </div>
 
               {formError && (
-                <div className="rounded-xl bg-error-container/60 text-on-error-container px-space-md py-space-sm font-body-sm text-body-sm">
+                <div className="rounded-xl bg-error-container/60 text-on-error-container px-space-md py-space-sm font-body-sm text-body-sm" role="alert">
                   {formError.message || 'Could not save the activity.'}
                 </div>
               )}
@@ -445,6 +456,7 @@ export default function ActivitiesQuizManagement() {
                         )}
                       </div>
                       <textarea
+                        aria-label={`Question ${index + 1} text`}
                         className="w-full bg-surface-container-lowest px-3 py-2 rounded-lg font-body-sm text-body-sm border-0 focus:outline-none focus:ring-2 focus:ring-primary-container"
                         onChange={(event) => updateQuestion(index, { text: event.target.value })}
                         placeholder="Question text"
@@ -457,6 +469,7 @@ export default function ActivitiesQuizManagement() {
                             {option.key}
                           </span>
                           <input
+                            aria-label={`Question ${index + 1} option ${option.key}`}
                             className="w-full bg-surface-container-lowest px-3 py-2 rounded-lg font-body-sm text-body-sm border-0 focus:outline-none focus:ring-2 focus:ring-primary-container"
                             onChange={(event) => updateOption(index, option.key, event.target.value)}
                             placeholder={`Option ${option.key}`}
@@ -496,6 +509,7 @@ export default function ActivitiesQuizManagement() {
                         </label>
                       </div>
                       <input
+                        aria-label={`Question ${index + 1} concept tags`}
                         className="w-full bg-surface-container-lowest px-3 py-2 rounded-lg font-body-sm text-body-sm border-0 focus:outline-none focus:ring-2 focus:ring-primary-container"
                         onChange={(event) => updateQuestion(index, { concepts: event.target.value })}
                         placeholder="Concept tags, comma separated"
@@ -530,7 +544,7 @@ export default function ActivitiesQuizManagement() {
       )}
 
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 pointer-events-none">
+        <div className="fixed bottom-6 right-6 z-50 pointer-events-none" role="status" aria-live="polite">
           <div className="bg-inverse-surface text-inverse-on-surface px-space-md py-3 rounded-xl shadow-xl flex items-center gap-2">
             <span className="material-symbols-outlined text-[20px]">check_circle</span>
             <span className="font-label-md text-label-md">{toast}</span>
