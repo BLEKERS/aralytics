@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import BrandLogo from '../../components/BrandLogo';
 import { api, saveSession } from '../../api/client';
-import { describeApiError } from '../../components/DataState';
+import { DataError } from '../../components/DataState';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -123,14 +123,7 @@ export default function AccountActivationScreen() {
             <div className="absolute -top-12 -left-12 w-64 h-64 bg-surface-container rounded-full blur-3xl opacity-60 pointer-events-none -z-10"></div>
             <div className="absolute -bottom-10 -right-8 w-72 h-72 bg-surface-variant/40 rounded-full blur-3xl opacity-50 pointer-events-none -z-10"></div>
             {/* Main Activation Card Container */}
-            <div
-              className="w-full bg-surface-container-lowest rounded-xl sm:rounded-[24px] shadow-[0_12px_40px_rgba(91,75,219,0.08)] px-space-md sm:px-space-xl py-space-lg sm:py-space-xl"
-              style={{
-                boxShadow:
-                  'rgba(91, 75, 219, 0.15) 0px 20px 40px -15px, rgba(21, 25, 54, 0.08) 0px 10px 25px -5px, rgba(15, 23, 42, 0.12) 0px 35px 60px -15px',
-                border: '1px solid rgba(223, 224, 255, 0.8)',
-              }}
-            >
+            <div className="w-full bg-surface-container-lowest rounded-xl sm:rounded-[24px] shadow-[0_12px_36px_rgba(91,75,219,0.08)] px-space-md sm:px-space-xl py-space-lg sm:py-space-xl">
               {/* Top Badging & Headings */}
               <div className="flex flex-col items-center text-center">
                 <div className="inline-flex items-center gap-space-xs bg-surface-container-low px-3 py-1.5 rounded-full mb-space-sm">
@@ -146,28 +139,32 @@ export default function AccountActivationScreen() {
                   Enter your school-issued registration key or credentials to link your academic profile with Aralytics.
                 </p>
                 {/* Segmented Role Selector */}
-                <div className="w-full max-w-[420px] p-1 bg-surface-container-low rounded-xl flex items-center mb-space-lg">
+                <div aria-label="Account role" className="w-full max-w-[420px] p-1 bg-surface-container-low rounded-xl flex items-center mb-space-lg" role="tablist">
                   <button
+                    aria-selected={isStudent}
                     className={
                       isStudent
-                        ? 'flex-1 py-2.5 px-3 rounded-lg font-label-lg text-[16px] font-medium transition-all flex items-center justify-center gap-1.5 bg-surface-container-lowest text-primary shadow-[0_2px_8px_rgba(91,75,219,0.12)]'
-                        : 'flex-1 py-2.5 px-3 rounded-lg font-label-lg text-[16px] font-medium transition-all flex items-center justify-center gap-1.5 text-on-surface-variant hover:text-on-surface'
+                        ? 'flex-1 py-2.5 px-3 rounded-lg font-label-lg text-[15px] font-semibold transition-all flex items-center justify-center gap-1.5 bg-surface-container-lowest text-primary shadow-sm'
+                        : 'flex-1 py-2.5 px-3 rounded-lg font-label-lg text-[15px] font-medium transition-all flex items-center justify-center gap-1.5 text-on-surface-variant hover:text-on-surface'
                     }
                     id="role-student"
                     onClick={() => handleRoleChange('student')}
+                    role="tab"
                     type="button"
                   >
                     <span className="material-symbols-outlined text-[20px]">school</span>
                     <span className="">Student Activation</span>
                   </button>
                   <button
+                    aria-selected={!isStudent}
                     className={
                       !isStudent
-                        ? 'flex-1 py-2.5 px-3 rounded-lg font-label-lg text-[16px] font-medium transition-all flex items-center justify-center gap-1.5 bg-surface-container-lowest text-primary shadow-[0_2px_8px_rgba(91,75,219,0.12)]'
-                        : 'flex-1 py-2.5 px-3 rounded-lg font-label-lg text-[16px] font-medium transition-all flex items-center justify-center gap-1.5 text-on-surface-variant hover:text-on-surface'
+                        ? 'flex-1 py-2.5 px-3 rounded-lg font-label-lg text-[15px] font-semibold transition-all flex items-center justify-center gap-1.5 bg-surface-container-lowest text-primary shadow-sm'
+                        : 'flex-1 py-2.5 px-3 rounded-lg font-label-lg text-[15px] font-medium transition-all flex items-center justify-center gap-1.5 text-on-surface-variant hover:text-on-surface'
                     }
                     id="role-educator"
                     onClick={() => handleRoleChange('educator')}
+                    role="tab"
                     type="button"
                   >
                     <span className="material-symbols-outlined text-[20px]">co_present</span>
@@ -177,21 +174,17 @@ export default function AccountActivationScreen() {
               </div>
               {/* Activation Form */}
               <form className="space-y-space-md" id="activation-form" onSubmit={handleActivation}>
-                {error && (
-                  <div className="flex items-start gap-space-xs rounded-xl bg-error-container px-space-sm py-3 text-on-error-container" role="alert">
-                    <span className="material-symbols-outlined text-[20px]">error</span>
-                    <span className="font-body-md text-body-md">{describeApiError(error)}</span>
-                  </div>
-                )}
+                {error && <DataError error={error} />}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm sm:gap-space-md">
                   <div>
-                    <label className="block font-label-lg text-body-lg font-semibold text-on-surface mb-1.5" htmlFor="full-name">
+                    <label className="block font-label-lg text-[15px] font-semibold text-on-surface mb-1.5" htmlFor="full-name">
                       Full Name
                     </label>
                     <div className="relative flex items-center">
                       <span className="material-symbols-outlined absolute left-3.5 text-outline text-[22px] pointer-events-none">badge</span>
                       <input
-                        className="w-full pl-11 pr-4 py-3.5 bg-surface-container-lowest text-on-surface font-body-md text-body-lg rounded-xl shadow-[0_1px_4px_rgba(91,75,219,0.04)] placeholder:text-outline-variant focus:outline-none focus:shadow-[0_0_0_3px_#e4dfff] transition-all"
+                        autoComplete="name"
+                        className="w-full pl-11 pr-4 py-3.5 bg-surface-container-low text-on-surface font-body-lg text-[15px] rounded-xl placeholder:text-outline/70 focus:bg-surface-container-lowest focus:outline-none focus:shadow-[0_0_0_3px_rgba(91,75,219,0.22)] transition-all"
                         id="full-name"
                         onChange={(e) => setFullName(e.target.value)}
                         placeholder="Juan Dela Cruz"
@@ -202,13 +195,14 @@ export default function AccountActivationScreen() {
                     </div>
                   </div>
                   <div>
-                    <label className="block font-label-lg text-body-lg font-semibold text-on-surface mb-1.5" htmlFor="email">
+                    <label className="block font-label-lg text-[15px] font-semibold text-on-surface mb-1.5" htmlFor="email">
                       Email Address
                     </label>
                     <div className="relative flex items-center">
                       <span className="material-symbols-outlined absolute left-3.5 text-outline text-[22px] pointer-events-none">mail</span>
                       <input
-                        className="w-full pl-11 pr-4 py-3.5 bg-surface-container-lowest text-on-surface font-body-md text-body-lg rounded-xl shadow-[0_1px_4px_rgba(91,75,219,0.04)] placeholder:text-outline-variant focus:outline-none focus:shadow-[0_0_0_3px_#e4dfff] transition-all"
+                        autoComplete="email"
+                        className="w-full pl-11 pr-4 py-3.5 bg-surface-container-low text-on-surface font-body-lg text-[15px] rounded-xl placeholder:text-outline/70 focus:bg-surface-container-lowest focus:outline-none focus:shadow-[0_0_0_3px_rgba(91,75,219,0.22)] transition-all"
                         id="email"
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@school.edu.ph"
@@ -221,7 +215,7 @@ export default function AccountActivationScreen() {
                 </div>
                 <div className="">
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="font-label-lg text-body-lg font-semibold text-on-surface" htmlFor="institution-code">
+                    <label className="font-label-lg text-[15px] font-semibold text-on-surface" htmlFor="institution-code">
                       School or Institution Code
                     </label>
                     <span className="font-label-md text-label-md text-on-surface-variant">e.g. STJUDE-CS-2025</span>
@@ -229,7 +223,7 @@ export default function AccountActivationScreen() {
                   <div className="relative flex items-center">
                     <span className="material-symbols-outlined absolute left-3.5 text-outline text-[22px] pointer-events-none">domain</span>
                     <input
-                      className="w-full pl-11 pr-4 py-3.5 bg-surface-container-lowest text-on-surface font-body-md text-body-lg rounded-xl shadow-[0_1px_4px_rgba(91,75,219,0.04)] placeholder:text-outline-variant focus:outline-none focus:shadow-[0_0_0_3px_#e4dfff] transition-all uppercase tracking-wider"
+                      className="w-full pl-11 pr-4 py-3.5 bg-surface-container-low text-on-surface font-body-lg text-[15px] rounded-xl placeholder:text-outline/70 focus:bg-surface-container-lowest focus:outline-none focus:shadow-[0_0_0_3px_rgba(91,75,219,0.22)] transition-all uppercase tracking-wider"
                       id="institution-code"
                       onChange={(e) => setInstitutionCode(e.target.value)}
                       placeholder="e.g. STJUDE-MNL-2025"
@@ -241,7 +235,7 @@ export default function AccountActivationScreen() {
                 </div>
                 <div className="">
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="font-label-lg text-body-lg font-semibold text-on-surface" htmlFor="access-key" id="key-label">
+                    <label className="font-label-lg text-[15px] font-semibold text-on-surface" htmlFor="access-key" id="key-label">
                       {isStudent ? 'Access Key or Student ID' : 'Faculty PIN or Department Code'}
                     </label>
                     <span className="font-label-md text-label-md text-on-surface-variant" id="key-hint">
@@ -251,7 +245,7 @@ export default function AccountActivationScreen() {
                   <div className="relative flex items-center">
                     <span className="material-symbols-outlined absolute left-3.5 text-outline text-[22px] pointer-events-none">key</span>
                     <input
-                      className="w-full pl-11 pr-4 py-3.5 bg-surface-container-lowest text-on-surface font-body-md text-body-lg rounded-xl shadow-[0_1px_4px_rgba(91,75,219,0.04)] placeholder:text-outline-variant focus:outline-none focus:shadow-[0_0_0_3px_#e4dfff] transition-all uppercase tracking-wider"
+                      className="w-full pl-11 pr-4 py-3.5 bg-surface-container-low text-on-surface font-body-lg text-[15px] rounded-xl placeholder:text-outline/70 focus:bg-surface-container-lowest focus:outline-none focus:shadow-[0_0_0_3px_rgba(91,75,219,0.22)] transition-all uppercase tracking-wider"
                       id="access-key"
                       onChange={(e) => setAccessKey(e.target.value)}
                       placeholder={isStudent ? 'KEY-8821-PY' : 'FAC-2025-DEPED'}
@@ -263,13 +257,14 @@ export default function AccountActivationScreen() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm sm:gap-space-md pt-space-xs">
                   <div>
-                    <label className="block font-label-lg text-body-lg font-semibold text-on-surface mb-1.5" htmlFor="password">
+                    <label className="block font-label-lg text-[15px] font-semibold text-on-surface mb-1.5" htmlFor="password">
                       Set Your Password
                     </label>
                     <div className="relative flex items-center">
                       <span className="material-symbols-outlined absolute left-3.5 text-outline text-[22px] pointer-events-none">lock</span>
                       <input
-                        className="w-full pl-11 pr-10 py-3.5 bg-surface-container-lowest text-on-surface font-body-md text-body-lg rounded-xl shadow-[0_1px_4px_rgba(91,75,219,0.04)] placeholder:text-outline-variant focus:outline-none focus:shadow-[0_0_0_3px_#e4dfff] transition-all"
+                        autoComplete="new-password"
+                        className="w-full pl-11 pr-11 py-3.5 bg-surface-container-low text-on-surface font-body-lg text-[15px] rounded-xl placeholder:text-outline/70 focus:bg-surface-container-lowest focus:outline-none focus:shadow-[0_0_0_3px_rgba(91,75,219,0.22)] transition-all"
                         id="password"
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
@@ -279,7 +274,7 @@ export default function AccountActivationScreen() {
                       />
                       <button
                         aria-label="Toggle password visibility"
-                        className="absolute right-3 text-outline hover:text-on-surface transition-colors p-1"
+                        className="absolute right-3 text-outline hover:text-on-surface transition-colors p-1.5 rounded-lg"
                         onClick={() => setShowPassword((prev) => !prev)}
                         type="button"
                       >
@@ -290,13 +285,14 @@ export default function AccountActivationScreen() {
                     </div>
                   </div>
                   <div>
-                    <label className="block font-label-lg text-body-lg font-semibold text-on-surface mb-1.5" htmlFor="confirm-password">
+                    <label className="block font-label-lg text-[15px] font-semibold text-on-surface mb-1.5" htmlFor="confirm-password">
                       Confirm Password
                     </label>
                     <div className="relative flex items-center">
                       <span className="material-symbols-outlined absolute left-3.5 text-outline text-[22px] pointer-events-none">lock_reset</span>
                       <input
-                        className="w-full pl-11 pr-10 py-3.5 bg-surface-container-lowest text-on-surface font-body-md text-body-lg rounded-xl shadow-[0_1px_4px_rgba(91,75,219,0.04)] placeholder:text-outline-variant focus:outline-none focus:shadow-[0_0_0_3px_#e4dfff] transition-all"
+                        autoComplete="new-password"
+                        className="w-full pl-11 pr-11 py-3.5 bg-surface-container-low text-on-surface font-body-lg text-[15px] rounded-xl placeholder:text-outline/70 focus:bg-surface-container-lowest focus:outline-none focus:shadow-[0_0_0_3px_rgba(91,75,219,0.22)] transition-all"
                         id="confirm-password"
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="••••••••"
@@ -306,7 +302,7 @@ export default function AccountActivationScreen() {
                       />
                       <button
                         aria-label="Toggle confirm password visibility"
-                        className="absolute right-3 text-outline hover:text-on-surface transition-colors p-1"
+                        className="absolute right-3 text-outline hover:text-on-surface transition-colors p-1.5 rounded-lg"
                         onClick={() => setShowConfirmPassword((prev) => !prev)}
                         type="button"
                       >

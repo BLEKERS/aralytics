@@ -83,14 +83,7 @@ export default function LoginScreen() {
             <div className="absolute -top-12 -left-12 w-48 h-48 bg-primary-container/10 rounded-full blur-3xl pointer-events-none"></div>
             <div className="absolute -bottom-10 -right-10 w-44 h-44 bg-secondary-container/30 rounded-full blur-2xl pointer-events-none"></div>
             {/* Main Login Card */}
-            <div
-              className="relative bg-surface-container-lowest rounded-[24px] shadow-[0_12px_36px_rgba(91,75,219,0.08)] p-space-lg sm:p-space-xl flex flex-col gap-space-lg"
-              style={{
-                boxShadow:
-                  'rgba(91, 75, 219, 0.12) 0px 20px 40px -15px, rgba(0, 0, 0, 0.04) 0px 0px 25px 0px, rgba(15, 23, 42, 0.14) 0px 35px 60px -15px',
-                border: '1px solid rgba(200, 196, 215, 0.45)',
-              }}
-            >
+            <div className="relative bg-surface-container-lowest rounded-[24px] shadow-[0_12px_36px_rgba(91,75,219,0.08)] p-space-lg sm:p-space-xl flex flex-col gap-space-lg">
               {/* Card Branding & Heading */}
               <div className="flex flex-col items-center text-center gap-space-xs">
                 <div className="w-12 h-12 rounded-2xl bg-surface-container flex items-center justify-center text-primary shadow-[0_4px_16px_rgba(91,75,219,0.12)]">
@@ -104,8 +97,9 @@ export default function LoginScreen() {
                 </p>
               </div>
               {/* Role Selector Switcher */}
-              <div className="bg-surface-container-low p-1 rounded-xl flex items-center gap-1">
+              <div aria-label="Account role" className="bg-surface-container-low p-1 rounded-xl flex items-center gap-1" role="tablist">
                 <button
+                  aria-selected={isStudent}
                   className={
                     isStudent
                       ? 'flex-1 py-2.5 px-3 rounded-lg font-label-lg text-[15px] font-semibold transition-all flex items-center justify-center gap-space-xs bg-surface-container-lowest text-primary shadow-sm'
@@ -113,12 +107,14 @@ export default function LoginScreen() {
                   }
                   id="btn-role-student"
                   onClick={() => handleRoleChange('student')}
+                  role="tab"
                   type="button"
                 >
                   <span className="material-symbols-outlined text-[20px]">school</span>
                   <span className="">Student</span>
                 </button>
                 <button
+                  aria-selected={!isStudent}
                   className={
                     !isStudent
                       ? 'flex-1 py-2.5 px-3 rounded-lg font-label-lg text-[15px] font-semibold transition-all flex items-center justify-center gap-space-xs bg-surface-container-lowest text-primary shadow-sm'
@@ -126,6 +122,7 @@ export default function LoginScreen() {
                   }
                   id="btn-role-teacher"
                   onClick={() => handleRoleChange('teacher')}
+                  role="tab"
                   type="button"
                 >
                   <span className="material-symbols-outlined text-[20px]">person_check</span>
@@ -243,8 +240,8 @@ export default function LoginScreen() {
                   <label className="flex items-center gap-2.5 cursor-pointer select-none group">
                     <div className="relative flex items-center">
                       <input className="peer sr-only" id="remember-me" type="checkbox" />
-                      <div className="w-5 h-5 rounded-md bg-surface-container-low peer-checked:bg-primary transition-all flex items-center justify-center shadow-xs">
-                        <span className="material-symbols-outlined text-on-primary text-[15px] opacity-0 peer-checked:opacity-100 transition-opacity">
+                      <div className="w-5 h-5 rounded-md bg-surface-container-low border border-outline-variant/60 peer-checked:bg-primary peer-checked:border-primary peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2 transition-all flex items-center justify-center shadow-xs peer-checked:[&>span]:opacity-100">
+                        <span className="material-symbols-outlined text-on-primary text-[15px] opacity-0 transition-opacity">
                           check
                         </span>
                       </div>
@@ -309,7 +306,7 @@ export default function LoginScreen() {
             {/* Security & Compliance Micro-Footer */}
             <div className="flex flex-col items-center text-center gap-1.5 mt-space-md">
               <div className="flex items-center gap-1.5 text-on-surface-variant">
-                <span className="material-symbols-outlined text-[18px] text-secondary">gshield</span>
+                <span className="material-symbols-outlined text-[18px] text-secondary">shield</span>
                 <span className="font-label-md text-[13px] font-medium">
                   Compliant with Philippine Data Privacy Act of 2012 (RA 10173)
                 </span>
