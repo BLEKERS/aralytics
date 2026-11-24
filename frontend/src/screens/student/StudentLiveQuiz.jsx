@@ -97,22 +97,28 @@ export default function StudentLiveQuiz() {
       <main className="w-full pt-20 bg-surface flex-1">
         <div className="max-w-7xl mx-auto px-gutter py-space-lg flex flex-col gap-space-lg">
           {!quizId && (
-            <EmptyBlock
-              icon="quiz"
-              title="Choose an activity first"
-              message="Open an activity from My Activities to start a quiz."
-            />
+            <div className="flex flex-col items-center gap-space-md">
+              <EmptyBlock
+                className="w-full"
+                icon="quiz"
+                title="Choose an activity first"
+                message="Open an activity from My Activities to start a quiz."
+              />
+              <Link
+                className="px-5 py-2.5 rounded-xl bg-primary text-on-primary font-label-lg text-label-lg font-bold hover:bg-primary-container transition-colors"
+                to="/student/activities"
+              >
+                Browse My Activities
+              </Link>
+            </div>
           )}
           {quizId && quiz.loading && <LoadingBlock label="Loading your quiz…" />}
           {quizId && quiz.error && <DataError error={quiz.error} onRetry={quiz.reload} />}
 
           {quizId && quiz.data && (
             <>
-              <section className="flex flex-col md:flex-row md:items-center justify-between gap-space-md bg-surface-container-lowest p-space-lg rounded-xl shadow-sm">
+              <section className="flex flex-col md:flex-row md:items-center justify-between gap-space-md bg-surface-container-lowest p-space-lg rounded-2xl shadow-sm">
                 <div className="flex flex-col gap-1">
-                  <span className="font-label-sm text-label-sm uppercase tracking-wider text-primary font-bold">
-                    {quiz.data.className || 'Activity'}
-                  </span>
                   <h1 className="font-headline-lg text-headline-lg text-on-surface font-extrabold">
                     {quiz.data.title}
                   </h1>
@@ -120,12 +126,20 @@ export default function StudentLiveQuiz() {
                     {quiz.data.description || 'Answer every question, then submit.'}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="px-3 py-1.5 rounded-xl bg-surface-container-low font-label-md text-label-md">
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  {quiz.data.className && (
+                    <span className="px-3 py-1.5 rounded-xl bg-surface-container text-primary font-label-md text-label-md font-semibold">
+                      {quiz.data.className}
+                    </span>
+                  )}
+                  <span className="px-3 py-1.5 rounded-xl bg-surface-container-low font-label-md text-label-md tabular-nums">
                     Due {formatDue(quiz.data.dueDate)}
                   </span>
                   {!submitted && (
-                    <span className="px-3 py-1.5 rounded-xl bg-tertiary-fixed text-on-tertiary-fixed font-label-md text-label-md font-bold">
+                    <span
+                      aria-label="Elapsed time"
+                      className="px-3 py-1.5 rounded-xl bg-tertiary-fixed text-on-tertiary-fixed font-label-md text-label-md font-bold tabular-nums"
+                    >
                       {minutes}m {secondsLabel}s
                     </span>
                   )}
@@ -133,10 +147,10 @@ export default function StudentLiveQuiz() {
               </section>
 
               {submitted && (
-                <section className="rounded-xl bg-secondary-container text-on-secondary-container p-space-lg shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-space-md">
+                <section className="rounded-2xl bg-secondary-container text-on-secondary-container p-space-lg shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-space-md">
                   <div>
                     <h2 className="font-headline-sm text-headline-sm font-bold">Submitted</h2>
-                    <p className="font-body-md text-body-md">
+                    <p className="font-body-md text-body-md tabular-nums">
                       Score: {Number(result?.score ?? quiz.data.score ?? 0).toFixed(1)}% ·{' '}
                       Feedback: {result?.feedbackStatus || quiz.data.feedbackStatus || 'PENDING'}
                     </p>
@@ -156,31 +170,40 @@ export default function StudentLiveQuiz() {
 
               {!submitted && questions.length > 0 && question && (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
-                  <section className="lg:col-span-8 bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col gap-space-md">
+                  <section className="lg:col-span-8 bg-surface-container-lowest rounded-2xl p-space-lg shadow-sm flex flex-col gap-space-md">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-label-md text-label-md text-on-surface-variant">
+                      <span className="font-label-md text-label-md text-on-surface-variant tabular-nums">
                         Question {current + 1} of {questions.length}
                       </span>
-                      <span className="font-label-sm text-label-sm text-on-surface-variant">
+                      <span className="font-label-sm text-label-sm text-on-surface-variant tabular-nums">
                         {question.points} {question.points === 1 ? 'point' : 'points'}
                         {savingId === question.id && ' · Saving…'}
                       </span>
                     </div>
-                    <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface">
+                    <h2
+                      id="quiz-question-title"
+                      className="font-headline-sm text-headline-sm font-bold text-on-surface"
+                    >
                       {question.text}
                     </h2>
-                    <div className="flex flex-col gap-2">
+                    <div
+                      aria-labelledby="quiz-question-title"
+                      className="flex flex-col gap-2"
+                      role="radiogroup"
+                    >
                       {question.options.map((option) => {
                         const selected = answers[question.id] === option.key
                         return (
                           <button
                             key={option.key}
+                            aria-checked={selected}
                             className={
                               selected
-                                ? 'text-left px-4 py-3 rounded-xl border-2 border-primary bg-primary-container/10 font-body-md text-body-md transition-all'
+                                ? 'text-left px-4 py-3 rounded-xl border-2 border-primary bg-primary-container/10 ring-1 ring-primary/20 font-body-md text-body-md transition-all'
                                 : 'text-left px-4 py-3 rounded-xl border-2 border-transparent bg-surface-container-low hover:bg-surface-container font-body-md text-body-md transition-all'
                             }
                             onClick={() => chooseOption(option.key)}
+                            role="radio"
                             type="button"
                           >
                             <span className="font-bold text-primary mr-2">{option.key}.</span>
@@ -231,16 +254,23 @@ export default function StudentLiveQuiz() {
                     </div>
                   </section>
 
-                  <aside className="lg:col-span-4 bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col gap-space-md">
+                  <aside className="lg:col-span-4 bg-surface-container-lowest rounded-2xl p-space-lg shadow-sm flex flex-col gap-space-md">
                     <div className="flex items-center justify-between">
                       <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">
                         Progress
                       </h3>
-                      <span className="font-label-md text-label-md text-primary font-bold">
+                      <span className="font-label-md text-label-md text-primary font-bold tabular-nums">
                         {answeredCount}/{questions.length}
                       </span>
                     </div>
-                    <div className="w-full h-2 rounded-full bg-surface-container overflow-hidden">
+                    <div
+                      aria-label="Quiz completion progress"
+                      aria-valuemax={questions.length}
+                      aria-valuemin={0}
+                      aria-valuenow={answeredCount}
+                      className="w-full h-2 rounded-full bg-surface-container overflow-hidden"
+                      role="progressbar"
+                    >
                       <div
                         className="h-full rounded-full bg-primary transition-all"
                         style={{ width: `${(answeredCount / questions.length) * 100}%` }}
@@ -250,12 +280,20 @@ export default function StudentLiveQuiz() {
                       {questions.map((item, index) => (
                         <button
                           key={item.id}
+                          aria-current={index === current ? 'step' : undefined}
+                          aria-label={`Question ${index + 1}${
+                            index === current
+                              ? ' (current)'
+                              : answers[item.id]
+                                ? ' (answered)'
+                                : ' (unanswered)'
+                          }`}
                           className={
                             index === current
-                              ? 'h-9 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm font-bold'
+                              ? 'h-9 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm font-bold tabular-nums'
                               : answers[item.id]
-                                ? 'h-9 rounded-lg bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-bold'
-                                : 'h-9 rounded-lg bg-surface-container text-on-surface-variant font-label-sm text-label-sm'
+                                ? 'h-9 rounded-lg bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-bold tabular-nums'
+                                : 'h-9 rounded-lg bg-surface-container text-on-surface-variant font-label-sm text-label-sm tabular-nums'
                           }
                           onClick={() => setCurrent(index)}
                           type="button"
@@ -280,11 +318,20 @@ export default function StudentLiveQuiz() {
               )}
 
               {!submitted && questions.length === 0 && (
-                <EmptyBlock
-                  icon="quiz"
-                  title="This quiz has no questions"
-                  message="Ask your teacher to add questions and publish it again."
-                />
+                <div className="flex flex-col items-center gap-space-md">
+                  <EmptyBlock
+                    className="w-full"
+                    icon="quiz"
+                    title="This quiz has no questions"
+                    message="Ask your teacher to add questions and publish it again."
+                  />
+                  <Link
+                    className="px-5 py-2.5 rounded-xl bg-primary text-on-primary font-label-lg text-label-lg font-bold hover:bg-primary-container transition-colors"
+                    to="/student/activities"
+                  >
+                    Back to My Activities
+                  </Link>
+                </div>
               )}
             </>
           )}

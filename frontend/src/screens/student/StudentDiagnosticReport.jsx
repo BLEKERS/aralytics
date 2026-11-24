@@ -63,11 +63,20 @@ export default function StudentDiagnosticReport() {
       <main className="w-full pt-20 bg-surface flex-1">
         <div className="max-w-7xl mx-auto px-gutter py-space-lg flex flex-col gap-space-lg">
           {!submissionId && (
-            <EmptyBlock
-              icon="psychology"
-              title="Pick an attempt"
-              message="Open a completed activity or your feedback history to view its diagnostic report."
-            />
+            <div className="flex flex-col items-center gap-space-md">
+              <EmptyBlock
+                className="w-full"
+                icon="psychology"
+                title="Pick an attempt"
+                message="Open a completed activity or your feedback history to view its diagnostic report."
+              />
+              <Link
+                className="px-5 py-2.5 rounded-xl bg-primary text-on-primary font-label-lg text-label-lg font-bold hover:bg-primary-container transition-colors"
+                to="/student/progress"
+              >
+                View Progress &amp; Feedback History
+              </Link>
+            </div>
           )}
           {submissionId && feedback.loading && <LoadingBlock label="Loading your diagnostic feedback…" />}
           {submissionId && feedback.error && (
@@ -80,13 +89,15 @@ export default function StudentDiagnosticReport() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-space-md">
                   <div className="flex items-start gap-space-md">
                     <div className="w-12 h-12 rounded-xl bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-md">
-                      <span className="material-symbols-outlined text-[28px]">psychology</span>
+                      <span aria-hidden="true" className="material-symbols-outlined text-[28px]">
+                        psychology
+                      </span>
                     </div>
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-label-sm text-label-sm uppercase tracking-wider text-primary font-bold">
-                          AI Diagnostic Report
-                        </span>
+                        <h1 className="font-headline-lg text-headline-lg text-on-surface">
+                          {view.quizTitle}
+                        </h1>
                         <span
                           className={
                             pending
@@ -97,10 +108,7 @@ export default function StudentDiagnosticReport() {
                           {view.status}
                         </span>
                       </div>
-                      <h1 className="font-headline-lg text-headline-lg text-on-surface mt-1">
-                        {view.quizTitle}
-                      </h1>
-                      <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+                      <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5 tabular-nums">
                         Submission #{view.submissionId} · Generated {formatDate(view.generatedAt)}
                       </p>
                     </div>
@@ -129,20 +137,22 @@ export default function StudentDiagnosticReport() {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
                 <section className="lg:col-span-8 bg-surface-container-lowest rounded-2xl p-space-lg shadow-md flex flex-col gap-space-md">
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary text-[22px]">smart_toy</span>
+                    <span aria-hidden="true" className="material-symbols-outlined text-primary text-[22px]">
+                      smart_toy
+                    </span>
                     <h2 className="font-headline-sm text-headline-sm text-on-surface">
                       Aral Coach Breakdown
                     </h2>
                   </div>
                   {pending ? (
                     <div className="rounded-xl bg-tertiary-fixed/40 p-space-md">
-                      <p className="font-body-md text-body-md text-on-surface">
+                      <p className="font-body-md text-body-md text-on-surface max-w-[70ch]">
                         Feedback is still being generated. This screen refreshes when you reload, or you
                         can retry now.
                       </p>
                     </div>
                   ) : (
-                    <p className="font-body-lg text-body-lg text-on-surface-variant leading-relaxed whitespace-pre-line">
+                    <p className="font-body-lg text-body-lg text-on-surface-variant leading-relaxed whitespace-pre-line max-w-[70ch]">
                       {view.content || 'No diagnostic text was generated for this attempt.'}
                     </p>
                   )}
@@ -158,11 +168,22 @@ export default function StudentDiagnosticReport() {
                           <div key={concept.conceptId ?? concept.concept} className="flex flex-col gap-1">
                             <div className="flex items-center justify-between font-label-md text-label-md">
                               <span className="text-on-surface">{concept.concept}</span>
-                              <span className={pct >= 70 ? 'text-secondary font-bold' : 'text-tertiary font-bold'}>
+                              <span
+                                className={`tabular-nums font-bold ${
+                                  pct >= 70 ? 'text-secondary' : 'text-tertiary'
+                                }`}
+                              >
                                 {pct}%
                               </span>
                             </div>
-                            <div className="w-full h-2 rounded-full bg-surface-container overflow-hidden">
+                            <div
+                              aria-label={`${concept.concept} mastery`}
+                              aria-valuemax={100}
+                              aria-valuemin={0}
+                              aria-valuenow={pct}
+                              className="w-full h-2 rounded-full bg-surface-container overflow-hidden"
+                              role="progressbar"
+                            >
                               <div
                                 className={`h-full rounded-full ${pct >= 70 ? 'bg-secondary' : 'bg-tertiary-fixed-dim'}`}
                                 style={{ width: `${pct}%` }}
