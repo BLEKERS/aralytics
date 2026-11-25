@@ -18,6 +18,7 @@ dist-ssr
 
 # Reference design package (input material, excluded from the repo)
 /screens/
+/screenshots/
 /fetch-screens.mjs
 
 # Editor directories and files
@@ -35,3 +36,6 @@ opencode.json
 *.txt
 
 /graphify-out/
+
+AGENTS.md 
+.impeccable/

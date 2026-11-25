@@ -51,10 +51,7 @@ export default function TeacherClassroomSettings() {
       <div className="w-full max-w-[1120px] mx-auto px-space-md lg:px-space-xl py-space-lg flex flex-col gap-space-xl">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-space-md">
           <div className="flex flex-col gap-space-xs">
-            <span className="font-label-sm text-label-sm uppercase tracking-wider text-primary font-bold">
-              Computer Science Department · Diagnostic Configuration
-            </span>
-            <h1 className="font-headline-lg text-headline-lg text-on-surface">
+            <h1 className="font-headline-lg text-headline-lg text-on-surface tracking-tight">
               Platform &amp; Classroom Settings
             </h1>
             <p className="font-body-md text-body-md text-on-surface-variant max-w-2xl">
@@ -74,7 +71,11 @@ export default function TeacherClassroomSettings() {
         </div>
 
         {saved && (
-          <div className="rounded-xl bg-secondary-container text-on-secondary-container px-space-md py-space-sm font-label-md text-label-md font-semibold">
+          <div
+            className="rounded-xl bg-secondary-container text-on-secondary-container px-space-md py-space-sm font-label-md text-label-md font-semibold"
+            role="status"
+            aria-live="polite"
+          >
             Settings saved.
           </div>
         )}
@@ -98,17 +99,19 @@ export default function TeacherClassroomSettings() {
                   </p>
                 </div>
               </div>
-              <div className="grid grid-cols-1 gap-space-xs">
+              <div className="grid grid-cols-1 gap-space-xs" role="radiogroup" aria-label="AI Diagnostic Feedback Tone">
                 {TONES.map((option) => {
                   const selected = tone === option.value
                   return (
                     <button
                       key={option.value}
+                      aria-checked={selected}
                       className={
                         'text-left p-space-md rounded-xl transition-all flex items-start justify-between gap-space-sm ' +
                         (selected ? 'bg-surface-container-high shadow-md' : 'bg-surface-container-low hover:bg-surface-container-high')
                       }
                       onClick={() => setTone(option.value)}
+                      role="radio"
                       type="button"
                     >
                       <div className="flex items-start gap-space-sm">
@@ -184,13 +187,14 @@ export default function TeacherClassroomSettings() {
                   </p>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="font-body-sm text-body-sm text-on-surface-variant">Threshold</span>
-                  <span className="font-headline-sm text-headline-sm text-primary font-bold bg-surface-container-lowest px-3 py-1 rounded-lg shadow-xs">
+                  <label className="font-body-sm text-body-sm text-on-surface-variant" htmlFor="intervention-threshold">Threshold</label>
+                  <span className="font-headline-sm text-headline-sm text-primary font-bold bg-surface-container-lowest px-3 py-1 rounded-lg shadow-xs tabular-nums">
                     {threshold}%
                   </span>
                 </div>
                 <input
                   className="w-full accent-primary cursor-pointer"
+                  id="intervention-threshold"
                   max="100"
                   min="0"
                   onChange={(event) => setThreshold(Number(event.target.value))}

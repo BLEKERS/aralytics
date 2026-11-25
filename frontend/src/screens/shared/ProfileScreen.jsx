@@ -1,25 +1,28 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import StudentHeader from '../../components/student/StudentHeader'
 import { api, getStoredUser } from '../../api/client'
 import { useApiResource } from '../../api/useApiResource'
 import { DataError, LoadingBlock } from '../../components/DataState'
 
 const FIELD =
-  'w-full px-4 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant/40 font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all'
+  'w-full px-4 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant/40 font-body-md text-body-md text-on-surface placeholder:text-outline focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all'
 
 function Notice({ notice }) {
   if (!notice) return null
   const error = notice.tone === 'error'
   return (
     <div
-      className={`rounded-xl px-space-md py-space-sm font-label-md text-label-md font-semibold ${
+      className={`rounded-xl px-space-md py-space-sm font-label-md text-label-md font-semibold flex items-center gap-2 ${
         error
           ? 'bg-error-container text-on-error-container'
           : 'bg-secondary-container text-on-secondary-container'
       }`}
       role={error ? 'alert' : 'status'}
     >
-      {notice.text}
+      <span className="material-symbols-outlined text-[18px] shrink-0">
+        {error ? 'error' : 'check_circle'}
+      </span>
+      <span>{notice.text}</span>
     </div>
   )
 }
@@ -30,22 +33,20 @@ export default function ProfileScreen() {
   const profile = useApiResource(() => api.auth.profile(), [])
   const user = profile.data?.user
 
-  const [fullName, setFullName] = useState('')
-  const [username, setUsername] = useState('')
+  const [fullNameDraft, setFullNameDraft] = useState(null)
+  const [usernameDraft, setUsernameDraft] = useState(null)
   const [savingProfile, setSavingProfile] = useState(false)
   const [profileNotice, setProfileNotice] = useState(null)
 
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPasswords, setShowPasswords] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
   const [passwordNotice, setPasswordNotice] = useState(null)
 
-  useEffect(() => {
-    if (!user) return
-    setFullName(user.fullName || '')
-    setUsername(user.username || '')
-  }, [user])
+  const fullName = fullNameDraft ?? user?.fullName ?? ''
+  const username = usernameDraft ?? user?.username ?? ''
 
   async function saveProfile(event) {
     event.preventDefault()
@@ -53,6 +54,8 @@ export default function ProfileScreen() {
     setSavingProfile(true)
     try {
       await api.auth.updateProfile({ fullName, username })
+      setFullNameDraft(null)
+      setUsernameDraft(null)
       setProfileNotice({ tone: 'success', text: 'Profile updated.' })
       profile.reload()
     } catch (error) {
@@ -89,9 +92,6 @@ export default function ProfileScreen() {
       <Shell className={isTeacher ? 'w-full' : 'w-full pt-20 flex-1'}>
         <div className="max-w-[1120px] mx-auto px-space-md lg:px-space-xl py-space-lg flex flex-col gap-space-lg">
           <div className="flex flex-col gap-space-xs">
-            <span className="font-label-sm text-label-sm uppercase tracking-wider text-primary font-bold">
-              Account
-            </span>
             <h1 className="font-headline-lg text-headline-lg text-on-surface">My Profile</h1>
             <p className="font-body-md text-body-md text-on-surface-variant">
               View your account details and keep your sign-in information up to date.
@@ -105,30 +105,33 @@ export default function ProfileScreen() {
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
               <section className="xl:col-span-7 bg-surface-container-lowest rounded-2xl p-space-lg shadow-[0_4px_20px_rgba(91,75,219,0.08)] flex flex-col gap-space-md">
                 <h2 className="font-headline-sm text-headline-sm text-on-surface">Account Details</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-space-sm">
                   {[
                     ['Email', user.email],
                     ['Role', user.role === 'TEACHER' ? 'Teacher' : 'Student'],
                     ['School', user.schoolName || '—'],
                   ].map(([label, value]) => (
-                    <div key={label} className="flex flex-col">
+                    <div key={label} className="flex flex-col gap-0.5 rounded-xl bg-surface-container-low px-4 py-3">
                       <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
                         {label}
                       </span>
-                      <span className="font-body-md text-body-md text-on-surface break-words">
+                      <span className="font-body-md text-body-md text-on-surface font-medium break-words">
                         {value}
                       </span>
                     </div>
                   ))}
                 </div>
 
-                <form className="flex flex-col gap-space-sm" onSubmit={saveProfile}>
+                <form className="flex flex-col gap-space-sm pt-space-xs border-t border-surface-container-high/50" onSubmit={saveProfile}>
                   <label className="flex flex-col gap-1">
                     <span className="font-label-md text-label-md text-on-surface">Full Name</span>
                     <input
                       className={FIELD}
                       maxLength={160}
-                      onChange={(event) => setFullName(event.target.value)}
+                      onChange={(event) => {
+                        setFullNameDraft(event.target.value)
+                        if (profileNotice) setProfileNotice(null)
+                      }}
                       required
                       value={fullName}
                     />
@@ -138,14 +141,17 @@ export default function ProfileScreen() {
                     <input
                       className={FIELD}
                       maxLength={64}
-                      onChange={(event) => setUsername(event.target.value)}
+                      onChange={(event) => {
+                        setUsernameDraft(event.target.value)
+                        if (profileNotice) setProfileNotice(null)
+                      }}
                       required
                       value={username}
                     />
                   </label>
                   <Notice notice={profileNotice} />
                   <button
-                    className="self-start flex items-center gap-space-xs bg-primary-container hover:bg-primary text-on-primary px-space-lg py-2.5 rounded-xl font-label-lg text-label-lg shadow-[0_4px_16px_rgba(91,75,219,0.24)] transition-all disabled:opacity-50"
+                    className="self-start mt-1 flex items-center gap-space-xs bg-primary-container hover:bg-primary text-on-primary px-space-lg py-2.5 rounded-xl font-label-lg text-label-lg shadow-[0_4px_16px_rgba(91,75,219,0.24)] transition-all disabled:opacity-50"
                     disabled={savingProfile}
                     type="submit"
                   >
@@ -156,7 +162,20 @@ export default function ProfileScreen() {
               </section>
 
               <section className="xl:col-span-5 bg-surface-container-lowest rounded-2xl p-space-lg shadow-[0_4px_20px_rgba(91,75,219,0.08)] flex flex-col gap-space-md">
-                <h2 className="font-headline-sm text-headline-sm text-on-surface">Change Password</h2>
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="font-headline-sm text-headline-sm text-on-surface">Change Password</h2>
+                  <button
+                    aria-pressed={showPasswords}
+                    className="inline-flex items-center gap-1 text-on-surface-variant hover:text-primary font-label-sm text-label-sm font-medium transition-colors"
+                    onClick={() => setShowPasswords((prev) => !prev)}
+                    type="button"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">
+                      {showPasswords ? 'visibility_off' : 'visibility'}
+                    </span>
+                    <span>{showPasswords ? 'Hide' : 'Show'}</span>
+                  </button>
+                </div>
                 <form className="flex flex-col gap-space-sm" onSubmit={savePassword}>
                   <label className="flex flex-col gap-1">
                     <span className="font-label-md text-label-md text-on-surface">
@@ -167,7 +186,7 @@ export default function ProfileScreen() {
                       className={FIELD}
                       onChange={(event) => setCurrentPassword(event.target.value)}
                       required
-                      type="password"
+                      type={showPasswords ? 'text' : 'password'}
                       value={currentPassword}
                     />
                   </label>
@@ -176,9 +195,11 @@ export default function ProfileScreen() {
                     <input
                       autoComplete="new-password"
                       className={FIELD}
+                      maxLength={72}
+                      minLength={8}
                       onChange={(event) => setNewPassword(event.target.value)}
                       required
-                      type="password"
+                      type={showPasswords ? 'text' : 'password'}
                       value={newPassword}
                     />
                     <span className="font-body-sm text-body-sm text-on-surface-variant">
@@ -192,15 +213,17 @@ export default function ProfileScreen() {
                     <input
                       autoComplete="new-password"
                       className={FIELD}
+                      maxLength={72}
+                      minLength={8}
                       onChange={(event) => setConfirmPassword(event.target.value)}
                       required
-                      type="password"
+                      type={showPasswords ? 'text' : 'password'}
                       value={confirmPassword}
                     />
                   </label>
                   <Notice notice={passwordNotice} />
                   <button
-                    className="self-start flex items-center gap-space-xs bg-primary-container hover:bg-primary text-on-primary px-space-lg py-2.5 rounded-xl font-label-lg text-label-lg shadow-[0_4px_16px_rgba(91,75,219,0.24)] transition-all disabled:opacity-50"
+                    className="self-start mt-1 flex items-center gap-space-xs bg-primary-container hover:bg-primary text-on-primary px-space-lg py-2.5 rounded-xl font-label-lg text-label-lg shadow-[0_4px_16px_rgba(91,75,219,0.24)] transition-all disabled:opacity-50"
                     disabled={savingPassword}
                     type="submit"
                   >

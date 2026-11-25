@@ -1,8 +1,6 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import BrandLogo from '../../components/BrandLogo'
-import NotificationBell from '../../components/NotificationBell'
-import { api, getStoredUser, logout } from '../../api/client'
+import StudentHeader from '../../components/student/StudentHeader'
+import { api, getStoredUser } from '../../api/client'
 import { useApiResource } from '../../api/useApiResource'
 import { DataError, EmptyBlock, LoadingBlock } from '../../components/DataState'
 
@@ -62,14 +60,11 @@ function conceptCategory(concept) {
 }
 
 export default function StudentDashboard() {
-  const [menuOpen, setMenuOpen] = useState(false)
-
   const dashboard = useApiResource(() => api.student.dashboard(), [])
   const activities = useApiResource(() => api.student.activities(), [])
 
   const user = getStoredUser()
   const firstName = user?.fullName?.split(' ')[0] || 'there'
-  const fullName = user?.fullName || 'Student'
 
   const streakDays = dashboard.data?.streak?.activeDaysLast7 ?? 0
   const conceptMastery = (Array.isArray(dashboard.data?.conceptMastery)
@@ -96,151 +91,17 @@ export default function StudentDashboard() {
     ? conceptMastery[conceptMastery.length - 1]
     : null
 
+  const isInitialLoading =
+    (dashboard.loading && !dashboard.data) || (activities.loading && !activities.data)
+
   return (
-    <div className="bg-background font-body-md text-on-surface min-h-screen">
-      <header className="fixed top-0 left-0 right-0 z-50 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(91,75,219,0.06)]">
-        <div className="h-20 max-w-[1120px] mx-auto px-gutter flex items-center justify-between gap-space-md">
-          <div className="flex items-center gap-space-lg">
-            <BrandLogo to="/student/dashboard" />
-            <nav
-              className="hidden xl:flex items-center gap-space-xs"
-              data-active-classes="bg-primary-container text-on-primary font-label-lg text-label-lg rounded-full px-space-md py-space-xs shadow-[0_2px_8px_rgba(91,75,219,0.15)]"
-            >
-              <Link
-                aria-current="page"
-                className="transition-colors bg-primary-container text-on-primary font-label-lg text-label-lg rounded-full px-space-md py-space-xs shadow-[0_2px_8px_rgba(91,75,219,0.15)]"
-                data-path="home"
-                to="/student/dashboard"
-              >
-                Home
-              </Link>
-              <Link
-                className="px-space-md py-space-xs rounded-full font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors"
-                data-path="my-quizzes-activities"
-                to="/student/activities"
-              >
-                My Quizzes &amp; Activities
-              </Link>
-              <Link
-                className="px-space-md py-space-xs rounded-full font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors"
-                data-path="my-progress-badges"
-                to="/student/progress"
-              >
-                My Progress &amp; Badges
-              </Link>
-              <Link
-                className="px-space-md py-space-xs rounded-full font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors"
-                data-path="aral-ai-feedback"
-                to="/student/feedback"
-              >
-                Aral AI Feedback
-              </Link>
-            </nav>
-            <button
-              aria-expanded={menuOpen}
-              aria-label="Open navigation menu"
-              className="xl:hidden w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors shrink-0"
-              onClick={() => setMenuOpen(!menuOpen)}
-              title="Menu"
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[20px]">
-                {menuOpen ? 'close' : 'menu'}
-              </span>
-            </button>
-          </div>
-          <div className="flex items-center gap-space-sm">
-            <div className="hidden sm:flex items-center gap-space-xs bg-surface-container px-3 py-1.5 rounded-full">
-              <span className="material-symbols-outlined text-[18px] text-tertiary-container">
-                local_fire_department
-              </span>
-              <span className="font-label-md text-label-md font-bold text-on-surface">5 Days</span>
-            </div>
-            <div className="hidden md:flex items-center gap-space-xs bg-secondary-fixed/50 px-3 py-1.5 rounded-full">
-              <span className="material-symbols-outlined text-[18px] text-secondary">bolt</span>
-              <span className="font-label-md text-label-md font-bold text-secondary">320 XP</span>
-            </div>
-            <NotificationBell
-              role="student"
-              buttonClassName="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors"
-            />
-            <Link
-              className="flex items-center gap-space-sm pl-space-xs"
-              title="View profile"
-              to="/profile"
-            >
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary">
-                <span className="material-symbols-outlined text-on-primary text-[18px]">person</span>
-              </div>
-              <div className="hidden lg:flex flex-col text-left">
-                <span className="font-label-md text-label-md text-on-surface leading-tight font-bold">
-                  {fullName}
-                </span>
-                <span className="font-body-sm text-body-sm text-on-surface-variant leading-tight">
-                  Python &amp; CS Track
-                </span>
-              </div>
-            </Link>
-            <button
-              className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-error hover:bg-error-container transition-colors"
-              onClick={async () => {
-                await logout()
-                window.location.assign('/login')
-              }}
-              title="Sign out"
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[20px]">logout</span>
-            </button>
-          </div>
-        </div>
-        {/* Mobile nav dropdown */}
-        {menuOpen && (
-          <div className="xl:hidden border-t border-outline-variant/30 bg-surface-container-lowest/95 backdrop-blur-xl px-gutter py-space-md flex flex-col gap-1">
-            <Link
-              className="flex items-center px-space-md py-2.5 rounded-xl bg-primary-container text-on-primary font-label-lg text-label-lg font-bold"
-              onClick={() => setMenuOpen(false)}
-              to="/student/dashboard"
-            >
-              Home
-            </Link>
-            <Link
-              className="flex items-center px-space-md py-2.5 rounded-xl font-label-lg text-label-lg text-on-surface-variant hover:bg-surface-container transition-colors"
-              onClick={() => setMenuOpen(false)}
-              to="/student/activities"
-            >
-              My Quizzes &amp; Activities
-            </Link>
-            <Link
-              className="flex items-center px-space-md py-2.5 rounded-xl font-label-lg text-label-lg text-on-surface-variant hover:bg-surface-container transition-colors"
-              onClick={() => setMenuOpen(false)}
-              to="/student/progress"
-            >
-              My Progress &amp; Badges
-            </Link>
-            <Link
-              className="flex items-center px-space-md py-2.5 rounded-xl font-label-lg text-label-lg text-on-surface-variant hover:bg-surface-container transition-colors"
-              onClick={() => setMenuOpen(false)}
-              to="/student/feedback"
-            >
-              Aral AI Feedback
-            </Link>
-            <Link
-              className="flex items-center gap-2 px-space-md py-2.5 rounded-xl font-label-lg text-label-lg text-error hover:bg-error-container/40 transition-colors mt-1 border-t border-outline-variant/20 pt-3"
-              onClick={() => setMenuOpen(false)}
-              to="/login"
-            >
-              <span className="material-symbols-outlined text-[18px]">logout</span>
-              <span>Sign Out</span>
-            </Link>
-          </div>
-        )}
-      </header>
-      <main className="w-full pt-20 bg-background max-w-[1120px] mx-auto px-gutter">
+    <div className="bg-background font-body-md text-on-surface min-h-screen flex flex-col">
+      <StudentHeader active="/student/dashboard" />
+      <main className="w-full pt-20 bg-background max-w-7xl mx-auto px-gutter flex-1">
         <div className="flex flex-col w-full pb-16">
           {(dashboard.loading || activities.loading) && (
             <div className="pt-6">
-              <LoadingBlock label="Loading your dashboard from the backend…" />
+              <LoadingBlock label="Loading your dashboard from Aralytics…" />
             </div>
           )}
           {(dashboard.error || activities.error) && (
@@ -254,80 +115,79 @@ export default function StudentDashboard() {
               />
             </div>
           )}
-          {/* Top Greeting & Motivation Banner Section */}
-          <section className="w-full pt-6 pb-4">
-            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-space-md">
-              <div>
-                <div className="inline-flex items-center gap-space-xs px-3 py-1 rounded-full bg-surface-container text-primary font-label-md text-label-md mb-2">
-                  <span className="material-symbols-outlined text-[16px]">terminal</span>
-                  <span className="">Python 101 • Section Py-B</span>
+          {!isInitialLoading && (
+            <>
+              {/* Top Greeting & Motivation Banner Section */}
+              <section className="w-full pt-6 pb-4">
+                <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-space-md">
+                  <div>
+                    <h1 className="font-headline-lg text-headline-lg text-on-surface tracking-tight font-extrabold">
+                      Kumusta, {firstName}!
+                    </h1>
+                    <p className="font-body-lg text-body-lg text-on-surface-variant mt-1">
+                      Ready for your next coding drill today? You have{' '}
+                      <span className="font-bold text-on-surface tabular-nums">
+                        {pendingActivities.length}
+                      </span>{' '}
+                      assigned {pendingActivities.length === 1 ? 'activity' : 'activities'} waiting.
+                    </p>
+                  </div>
+                  {/* Quick Student Metric Badges */}
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                    <div className="flex items-center gap-2 bg-surface-container-lowest px-4 py-2 rounded-xl shadow-sm">
+                      <span
+                        aria-hidden="true"
+                        className="material-symbols-outlined text-[18px] text-primary"
+                      >
+                        assignment_turned_in
+                      </span>
+                      <span className="font-label-md text-label-md text-on-surface font-semibold tabular-nums">
+                        {completedCount}/{assignedCount} Completed
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-surface-container-lowest px-4 py-2 rounded-xl shadow-sm">
+                      <span
+                        aria-hidden="true"
+                        className="material-symbols-outlined text-[18px] text-tertiary-container"
+                      >
+                        local_fire_department
+                      </span>
+                      <span className="font-label-md text-label-md text-on-surface font-semibold tabular-nums">
+                        {streakDays} {streakDays === 1 ? 'Day' : 'Days'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <h1 className="font-headline-lg text-headline-lg text-on-surface tracking-tight font-extrabold flex items-center gap-2">
-                  Kumusta, {firstName}!{' '}
-                  <span className="inline-block hover:rotate-12 transition-transform cursor-pointer">
-                    👋
-                  </span>
-                </h1>
-                <p className="font-body-lg text-body-lg text-on-surface-variant mt-1">
-                  Ready for your next coding drill today? You have{' '}
-                  <span className="font-bold text-on-surface">{pendingActivities.length}</span> assigned{' '}
-                  {pendingActivities.length === 1 ? 'activity' : 'activities'} waiting.
-                </p>
-              </div>
-              {/* Quick Student Metric Badges */}
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                <div className="flex items-center gap-2 bg-surface-container-lowest px-4 py-2 rounded-xl shadow-sm">
-                  <span className="material-symbols-outlined text-[18px] text-primary">
-                    military_tech
-                  </span>
-                  <span className="font-label-md text-label-md text-on-surface font-semibold">
-                    Lvl 4 Explorer
-                  </span>
+                {/* Streak Urgency Banner */}
+                <div className="mt-5 w-full bg-surface-container-lowest rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-surface-container text-error flex items-center justify-center shrink-0">
+                      <span aria-hidden="true" className="material-symbols-outlined text-[20px]">
+                        crisis_alert
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-label-lg text-label-lg text-on-surface font-bold">
+                        {streakDays > 0 ? `${streakDays}-Day Streak Active` : 'Start your streak today'}
+                      </p>
+                      <p className="font-body-sm text-body-sm text-on-surface-variant">
+                        {streakDays > 0
+                          ? 'Complete 1 drill today to keep your streak alive.'
+                          : 'Complete your first drill today to start a new streak.'}
+                      </p>
+                    </div>
+                  </div>
+                  <Link
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-semibold hover:bg-primary-container transition-colors shrink-0"
+                    to={priorityActivity ? `/student/quiz?id=${priorityActivity.id}` : '/student/activities'}
+                  >
+                    <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
+                      play_circle
+                    </span>
+                    <span>Quick Drill</span>
+                  </Link>
                 </div>
-                <div className="flex items-center gap-2 bg-surface-container-lowest px-4 py-2 rounded-xl shadow-sm">
-                  <span className="material-symbols-outlined text-[18px] text-secondary">
-                    leaderboard
-                  </span>
-                  <span className="font-label-md text-label-md text-on-surface font-semibold">
-                    Rank #3
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 bg-surface-container-lowest px-4 py-2 rounded-xl shadow-sm">
-                  <span className="material-symbols-outlined text-[18px] text-tertiary-container">
-                    local_fire_department
-                  </span>
-                  <span className="font-label-md text-label-md text-on-surface font-semibold">
-                    {streakDays} {streakDays === 1 ? 'Day' : 'Days'} 🔥
-                  </span>
-                </div>
-              </div>
-            </div>
-            {/* Coral Streak Urgency Banner */}
-            <div className="mt-5 w-full bg-surface-container-lowest rounded-2xl p-4 sm:p-5 relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-surface-container text-error flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-[20px]">crisis_alert</span>
-                </div>
-                <div>
-                  <p className="font-label-lg text-label-lg text-on-surface font-bold">
-                    {streakDays > 0 ? `${streakDays}-Day Streak Active` : 'Start your streak today'}
-                  </p>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant">
-                    {streakDays > 0
-                      ? 'Complete 1 drill today to keep your streak alive and earn +25 XP.'
-                      : 'Complete your first drill today to start a new streak and earn +25 XP.'}
-                  </p>
-                </div>
-              </div>
-              <Link
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-semibold hover:bg-primary-container transition-colors shrink-0"
-                to={priorityActivity ? `/student/quiz?id=${priorityActivity.id}` : '/student/activities'}
-              >
-                <span className="material-symbols-outlined text-[18px]">play_circle</span>
-                <span className="">Quick Drill</span>
-              </Link>
-            </div>
-          </section>
+              </section>
           {/* Main Bento Grid (Hero Priority Drill 8 cols + Aral AI Coach 4 cols) */}
           <section className="grid grid-cols-1 lg:grid-cols-12 gap-space-lg mt-3">
             <div className="lg:col-span-7 xl:col-span-8 bg-surface-container-lowest rounded-2xl p-6 shadow-sm flex flex-col justify-between">
@@ -362,26 +222,26 @@ export default function StudentDashboard() {
                     </p>
                     <div className="flex flex-wrap items-center gap-6 my-5 pt-1">
                       <div className="flex items-center gap-2 text-on-surface">
-                        <span className="material-symbols-outlined text-[18px] text-on-surface-variant">
+                        <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-on-surface-variant">
                           quiz
                         </span>
-                        <span className="font-body-sm text-body-sm font-medium">
+                        <span className="font-body-sm text-body-sm font-medium tabular-nums">
                           {priorityActivity.questionCount} Questions
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-on-surface">
-                        <span className="material-symbols-outlined text-[18px] text-on-surface-variant">
+                        <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-on-surface-variant">
                           schedule
                         </span>
-                        <span className="font-body-sm text-body-sm font-medium">
+                        <span className="font-body-sm text-body-sm font-medium tabular-nums">
                           ~{Math.max(5, priorityActivity.questionCount * 2)} Minutes
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-on-surface">
-                        <span className="material-symbols-outlined text-[18px] text-on-surface-variant">
+                        <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-on-surface-variant">
                           target
                         </span>
-                        <span className="font-body-sm text-body-sm font-medium">
+                        <span className="font-body-sm text-body-sm font-medium tabular-nums">
                           {priorityActivity.score != null
                             ? `${Math.round(Number(priorityActivity.score))}% scored`
                             : '80% Mastery Goal'}
@@ -523,7 +383,7 @@ export default function StudentDashboard() {
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <div className={`w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center ${iconColor}`}>
-                          <span className="material-symbols-outlined text-[18px]">{conceptIcon(concept.concept)}</span>
+                          <span aria-hidden="true" className="material-symbols-outlined text-[18px]">{conceptIcon(concept.concept)}</span>
                         </div>
                         <span className={`px-2 py-0.5 rounded-full bg-surface-container font-label-sm text-label-sm font-semibold ${meta.pillClass}`}>
                           {meta.pill}
@@ -532,18 +392,25 @@ export default function StudentDashboard() {
                       <span className="font-body-sm text-body-sm text-on-surface-variant">
                         {conceptCategory(concept.concept)}
                       </span>
-                      <h4 className="font-label-lg text-label-lg text-on-surface font-bold mt-0.5">
+                      <h3 className="font-label-lg text-label-lg text-on-surface font-bold mt-0.5">
                         {concept.concept}
-                      </h4>
+                      </h3>
                     </div>
                     <div className="mt-4">
                       <div className="flex items-baseline justify-between mb-1.5">
                         <span className="font-body-sm text-body-sm text-on-surface-variant">
                           Mastery
                         </span>
-                        <span className={`font-label-lg text-label-lg font-bold ${meta.text}`}>{concept.pct}%</span>
+                        <span className={`font-label-lg text-label-lg font-bold tabular-nums ${meta.text}`}>{concept.pct}%</span>
                       </div>
-                      <div className="w-full h-2 rounded-full bg-surface-container overflow-hidden">
+                      <div
+                        aria-label={`${concept.concept} mastery`}
+                        aria-valuemax={100}
+                        aria-valuemin={0}
+                        aria-valuenow={concept.pct}
+                        className="w-full h-2 rounded-full bg-surface-container overflow-hidden"
+                        role="progressbar"
+                      >
                         <div className={`h-full rounded-full ${meta.bar}`} style={{ width: `${concept.pct}%` }}></div>
                       </div>
                       <p className="font-body-sm text-body-sm text-on-surface-variant mt-2 text-[11px]">
@@ -567,7 +434,7 @@ export default function StudentDashboard() {
           {/* Two-Column Bottom Section (Learning Path & Gamification) */}
           <section className="grid grid-cols-1 lg:grid-cols-12 gap-space-lg mt-10">
             {/* Left Column: Learning Path & Upcoming Quizzes (6 cols) */}
-            <div className="lg:col-span-6 bg-surface-container-lowest rounded-[20px] p-6 flex flex-col justify-between shadow-sm">
+            <div className="lg:col-span-6 bg-surface-container-lowest rounded-2xl p-6 flex flex-col justify-between shadow-sm">
               <div>
                 <div className="flex items-center justify-between pb-4 border-b border-surface-container-high mb-4">
                   <div className="flex items-center gap-2.5">
@@ -655,7 +522,7 @@ export default function StudentDashboard() {
               </div>
             </div>
             {/* Right Column: Gamification & Weekly Milestones (6 cols) */}
-            <div className="lg:col-span-6 bg-surface-container-lowest rounded-[20px] p-6 flex flex-col justify-between shadow-sm">
+            <div className="lg:col-span-6 bg-surface-container-lowest rounded-2xl p-6 flex flex-col justify-between shadow-sm">
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
@@ -762,10 +629,12 @@ export default function StudentDashboard() {
               </div>
             </div>
           </section>
+            </>
+          )}
         </div>
       </main>
       <footer className="w-full bg-surface-container-lowest mt-space-xl py-space-lg shadow-[0_-1px_8px_rgba(91,75,219,0.04)]">
-        <div className="max-w-[1120px] mx-auto px-gutter flex flex-col md:flex-row items-center justify-between gap-space-md text-center md:text-left">
+        <div className="max-w-7xl mx-auto px-gutter flex flex-col md:flex-row items-center justify-between gap-space-md text-center md:text-left">
           <div className="flex items-center gap-space-xs">
             <span className="font-body-sm text-body-sm text-on-surface-variant">
               Pagsulong sa Karunungan

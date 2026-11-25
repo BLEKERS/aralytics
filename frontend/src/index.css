@@ -170,7 +170,14 @@
     font-family: var(--font-body-md);
     font-size: var(--text-body-md);
     line-height: 20px;
+    caret-color: var(--color-primary);
     -webkit-font-smoothing: antialiased;
+  }
+  a {
+    text-underline-offset: 0.18em;
+  }
+  table {
+    font-variant-numeric: tabular-nums;
   }
   main > :first-child {
     margin-top: 0 !important;

@@ -6,7 +6,7 @@
 
 ## 1. Project Overview
 
-**Aralytics** (also branded **Aralytics Pilipinas AI**) is a Philippine CS / Python coding classroom and diagnostic analytics platform. The React 19 + Vite 8 + Tailwind CSS v4 frontend lives in `frontend/` and is organized into three role-separated views:
+**Aralytics** (also branded **Aralytics Pilipinas AI**) is a Philippine CS / Python coding classroom and diagnostic analytics platform. The repository combines a Spring Boot 3.4.13 + PostgreSQL 16 REST API in `backend/` (`http://localhost:8080`, see [`../backend/README.md`](../backend/README.md)) with a React 19 + Vite 8 + Tailwind CSS v4 SPA in `frontend/` (`http://localhost:3000`) organized into three role-separated views:
 1. **Public & Authentication View** (`frontend/src/screens/public/`):
    - Public Marketing Landing Page (`/`)
    - Unified Student / Teacher Login (`/login`)
@@ -37,28 +37,42 @@ The UI is converted 1:1 from 13 Google Stitch HTML exports located in `screens/s
 | Styling | `tailwindcss@^4.2.2`, `@tailwindcss/vite@^4.2.2` | Configured via `@theme` block in `frontend/src/index.css` (no `tailwind.config.js`) |
 | Bundler | `vite@^8.0.0`, `@vitejs/plugin-react@^6.0.0` | Dev server on `http://localhost:3000` |
 | Linter | `oxlint@^1.51.0` | `npm run lint` (`oxlint`) inside `frontend/` |
+| Backend API | Spring Boot `3.4.13` (Java 21, Maven wrapper) | Stateless HS256 JWT (`jjwt@0.12.7`), RFC 7807 errors, port `8080` |
+| Database | PostgreSQL `16` + Flyway (`ddl-auto: validate`) | `aralytics` (`dev,seed`: `V1` + `V2`) and `aralytics_prod` (`prod`: `V1` only) |
 
-### Commands (run from `frontend/` or with `--prefix frontend`)
+### Frontend Commands (run from `frontend/` or with `--prefix frontend`)
 - `npm --prefix frontend run dev` — start Vite dev server
 - `npm --prefix frontend run build` — production bundle into `frontend/dist/`
 - `npm --prefix frontend run lint` — run `oxlint` across `frontend/src/`
+
+### Backend Commands & Environment Switching
+A single root `.env` (copied from `.env.example`) controls both backend and frontend via `ENV`, isolating `dev,seed` (`aralytics` DB) from `prod` (`aralytics_prod` DB) so switching modes never triggers Flyway `V2` validation conflicts:
+- **`ENV=development` (default)**: backend runs `dev,seed` on `aralytics` (Swagger UI + demo accounts); Vite `npm run dev` enables demo login pre-fill and seeded activation hints.
+- **`ENV=production`**: backend runs `prod` on `aralytics_prod` (schema-only, Swagger off, `ProductionConfigGuard` requires `JWT_SECRET` >= 32 bytes); Vite strips demo credentials and seeded activation hints.
+- **Docker Compose (run from repo root — reads root `.env` automatically)**:
+  - `docker compose up -d` — start PostgreSQL 16 + backend (`--build` rebuilds after Java edits)
+  - `docker compose up -d postgres` — start PostgreSQL 16 container (`aralytics-postgres` on `:5432`); fresh volumes auto-create `aralytics` and `aralytics_prod` via `backend/docker/postgres-init.sql` (if you have a pre-existing `postgres_data` volume, run `docker exec aralytics-postgres psql -U postgres -c "CREATE DATABASE aralytics_prod;"` once)
+  - `docker compose down` — stop containers
+- **Local Maven (run from `backend/`)**:
+  - Load root `..\.env` into `Env:`, then `.\mvnw.cmd spring-boot:run` (honors `ENV=development|production`)
+  - `.\mvnw.cmd -B verify` — run JUnit 5 + MockMvc + Testcontainers suite
 
 ---
 
 ## 3. Design System Tokens (`frontend/src/index.css`)
 
-All Stitch exports share a Material-3-inspired palette and typography defined inside `@theme` in `frontend/src/index.css`:
+All Stitch exports share the "Warm Editorial EdTech" Material-3-inspired palette and typography defined inside `@theme` in `frontend/src/index.css`:
 
 - **Colors**:
-  - Primary (Teal): `--color-primary: #00575c`, `--color-primary-container: #0e7076`, `--color-primary-fixed: #9ef0f7`, `--color-primary-fixed-dim: #82d3da`, `--color-on-primary-fixed: #002022`, `--color-on-primary-fixed-variant: #004f54`
-  - Secondary (Emerald): `--color-secondary: #1b6d24`, `--color-secondary-container: #a0f399`, `--color-secondary-fixed: #a3f69c`, `--color-on-secondary-container: #217128`, `--color-on-secondary-fixed: #002204`
-  - Tertiary (Amber/Brown): `--color-tertiary: #653e00`, `--color-tertiary-container: #835200`, `--color-tertiary-fixed: #ffddb4`, `--color-tertiary-fixed-dim: #ffb958`, `--color-on-tertiary-fixed: #291800`, `--color-on-tertiary-fixed-variant: #643f00`
+  - Primary (Indigo): `--color-primary: #422ec2`, `--color-primary-container: #5b4bdb`, `--color-primary-fixed: #e4dfff`, `--color-primary-fixed-dim: #c6c0ff`, `--color-on-primary-fixed: #150066`, `--color-on-primary-fixed-variant: #3e28be`
+  - Secondary (Emerald): `--color-secondary: #006b5f`, `--color-secondary-container: #6df5e1`, `--color-secondary-fixed: #71f8e4`, `--color-on-secondary-container: #006f64`, `--color-on-secondary-fixed: #00201c`
+  - Tertiary (Amber/Gold): `--color-tertiary: #5f4700`, `--color-tertiary-container: #7d5e00`, `--color-tertiary-fixed: #ffdf9a`, `--color-tertiary-fixed-dim: #f4bf32`, `--color-on-tertiary-fixed: #251a00`, `--color-on-tertiary-fixed-variant: #5a4300`
   - Error (Crimson): `--color-error: #ba1a1a`, `--color-error-container: #ffdad6`, `--color-on-error-container: #93000a`
-  - Surfaces (Warm Sand / Cream): `--color-background: #faf9f4`, `--color-surface: #faf9f4`, `--color-surface-bright: #faf9f4`, `--color-surface-dim: #dadad5`, `--color-surface-container-lowest: #ffffff`, `--color-surface-container-low: #f4f4ef`, `--color-surface-container: #eeeee9`, `--color-surface-container-high: #e8e8e3`, `--color-surface-container-highest: #e3e3de`, `--color-on-surface: #1a1c19`, `--color-on-surface-variant: #3f4849`, `--color-outline: #6f7979`, `--color-outline-variant: #bec8c9`
+  - Surfaces (Cool Lavender-Tint White): `--color-background: #fbf8ff`, `--color-surface: #fbf8ff`, `--color-surface-bright: #fbf8ff`, `--color-surface-dim: #d5d7fe`, `--color-surface-container-lowest: #ffffff`, `--color-surface-container-low: #f4f2ff`, `--color-surface-container: #edecff`, `--color-surface-container-high: #e6e6ff`, `--color-surface-container-highest: #dfe0ff`, `--color-on-surface: #151936`, `--color-on-surface-variant: #474554`, `--color-outline: #787586`, `--color-outline-variant: #c8c4d7`
 - **Fonts** (loaded in `frontend/index.html`):
-  - `--font-headline`: `'Nunito Sans', sans-serif`
-  - `--font-body`: `'Inter', sans-serif`
-  - `--font-label`: `'Inter', sans-serif`
+  - `--font-headline`: `'Nunito Sans', sans-serif` (tokens `--font-display-lg`, `--font-headline-lg/md/sm`, `--font-metric-number`)
+  - `--font-body`: `'Inter', sans-serif` (`--font-body-lg/md/sm`)
+  - `--font-label`: `'Inter', sans-serif` (`--font-label-lg/md/sm`)
   - `--font-mono`: `'JetBrains Mono', monospace`
 - **Radii** (`@theme` overrides):
   - `--radius-sm: 4px`, `--radius-DEFAULT: 8px`, `--radius-md: 8px`, `--radius-lg: 12px`, `--radius-xl: 16px`, `--radius-2xl: 20px`, `--radius-3xl: 24px`, `--radius-full: 9999px`
@@ -82,8 +96,11 @@ All Stitch exports share a Material-3-inspired palette and typography defined in
 | Route | Component | Source Stitch Export | Layout Chrome |
 |---|---|---|---|
 | `/` | `frontend/src/screens/public/LandingPage.jsx` | `screens/stitch/landing_page/code.html` | Standalone (Public Marketing Header + Footer) |
-| `/login` | `frontend/src/screens/public/LoginScreen.jsx` | `screens/stitch/aralytics_login/code.html` | Standalone (Auth Header + Split Card + Footer) |
-| `/register` | `frontend/src/screens/public/AccountActivationScreen.jsx` | `screens/stitch/aralytics_account_registration_activation/code.html` | Standalone (Auth Header + Split Card + Footer) |
+| `/login` | `frontend/src/screens/public/LoginScreen.jsx` | `screens/stitch/aralytics_login/code.html` | Standalone (Auth Header + Card + Footer) |
+| `/register` | `frontend/src/screens/public/AccountActivationScreen.jsx` | `screens/stitch/aralytics_account_registration_activation/code.html` | Standalone (Auth Header + Card + Footer) |
+| `/forgot-password` | `frontend/src/screens/public/ForgotPasswordScreen.jsx` | — | Standalone (Auth Header + Card + Footer) |
+| `/reset-password` | `frontend/src/screens/public/ResetPasswordScreen.jsx` | — | Standalone (Auth Header + Card + Footer) |
+| `/profile` | `frontend/src/screens/shared/ProfileScreen.jsx` | — | Role-aware (`AppShell` for Teacher, `StudentHeader` for Student) |
 | `/student/dashboard` | `frontend/src/screens/student/StudentDashboard.jsx` | `screens/stitch/portal/code.html` | Standalone (Student Portal Header + Mobile Nav + Footer) |
 | `/student/activities` | `frontend/src/screens/student/StudentMyActivities.jsx` | `screens/stitch/aralytics_student_my_activities/code.html` | Standalone (Student Activities Header + Mobile Nav + Footer) |
 | `/student/quiz` | `frontend/src/screens/student/StudentLiveQuiz.jsx` | `screens/stitch/aralytics_student_live_quiz_code_scenario/code.html` | Standalone (Student Quiz Header + Sticky Submit Footer) |
@@ -108,7 +125,7 @@ All Stitch exports share a Material-3-inspired palette and typography defined in
 
 ## 5. Layout Architecture (`AppShell` vs Standalone)
 
-- **Teacher View Screens** (`/teacher/dashboard`, `/teacher/students`, `/teacher/activities`, `/teacher/reports`, `/teacher/settings`) share the exact same 240px left `<aside>` (`Sidebar.jsx`) and 64px sticky `<header>` (`TopBar.jsx`). `AppShell.jsx` renders both, plus a responsive mobile slide-over drawer (`lg:hidden`) triggered by a hamburger button in `TopBar.jsx`, and wraps children in `<main className="lg:ml-[240px] flex-1 p-6 lg:p-space-xl max-w-[1600px]">`.
+- **Teacher View Screens** (`/teacher/dashboard`, `/teacher/students`, `/teacher/activities`, `/teacher/reports`, `/teacher/settings`) share the 250px fixed left `<aside>` (`Sidebar.jsx`) and 72px fixed `<header>` (`TopBar.jsx`). `AppShell` in `frontend/src/App.jsx` renders both, plus a mobile backdrop/drawer (`lg:hidden`), and wraps children in `<div className="lg:pl-[250px]"><main className="relative pt-[72px] bg-surface min-h-screen">{children}</main></div>`.
   - Therefore, the 5 teacher screen components in `frontend/src/screens/teacher/` render **only the inner content of `<main>`** (from the Page Header `<div>` through the end of `<main>`), plus any screen-specific modals/drawers.
 - **Public & Auth Screens** (`/`, `/login`, `/register` in `frontend/src/screens/public/`) and **Student View Screens** (`/student/*` in `frontend/src/screens/student/`) use their own standalone headers and footers from their respective Stitch exports and bypass `AppShell` in `frontend/src/App.jsx`. Each Student View screen preserves its exact Stitch top navigation bar while wiring all links to `/student/*` and `/login` and providing a responsive `xl:hidden` hamburger menu for smaller screens.
 

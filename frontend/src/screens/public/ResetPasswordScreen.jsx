@@ -55,19 +55,12 @@ export default function ResetPasswordScreen() {
 
       <main className="flex-1 w-full max-w-[1120px] mx-auto px-margin-mobile md:px-margin py-space-xl flex items-center justify-center">
         <div className="w-full max-w-[480px]">
-          <div
-            className="bg-surface-container-lowest rounded-[24px] p-space-lg sm:p-space-xl flex flex-col gap-space-lg"
-            style={{
-              boxShadow:
-                'rgba(91, 75, 219, 0.12) 0px 20px 40px -15px, rgba(0, 0, 0, 0.04) 0px 0px 25px 0px, rgba(15, 23, 42, 0.14) 0px 35px 60px -15px',
-              border: '1px solid rgba(200, 196, 215, 0.45)',
-            }}
-          >
+          <div className="bg-surface-container-lowest rounded-[24px] shadow-[0_12px_36px_rgba(91,75,219,0.08)] p-space-lg sm:p-space-xl flex flex-col gap-space-lg">
             <div className="flex flex-col items-center text-center gap-space-xs">
               <div className="w-12 h-12 rounded-2xl bg-surface-container flex items-center justify-center text-primary">
                 <span className="material-symbols-outlined text-[26px]">password</span>
               </div>
-              <h1 className="font-display-lg text-[30px] leading-[1.2] font-extrabold tracking-tight text-on-surface mt-space-xs">
+              <h1 className="font-display-lg text-[30px] leading-[1.2] font-extrabold tracking-tight text-on-surface mt-space-xs text-balance">
                 Set a new password
               </h1>
               <p className="font-body-lg text-body-lg text-on-surface-variant max-w-[380px]">
