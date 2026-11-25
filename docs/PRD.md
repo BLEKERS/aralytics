@@ -59,7 +59,7 @@ Students learning to code often receive generic feedback that arrives too late t
 
 ### 5.1. Backend Architecture (Implemented)
 - **Framework:** Java 21, Spring Boot 3.4.13
-- **Database:** PostgreSQL 16 (local instance or `backend/docker-compose.yml` for development)
+- **Database:** PostgreSQL 16 (local instance or root `docker-compose.yml` reading `ENV=development|production` from root `.env`)
 - **ORM & Migrations:** Spring Data JPA (Hibernate) + Flyway
 - **Authentication:** Stateless JWT (JSON Web Tokens) + Spring Security + BCrypt
 - **API Documentation:** Springdoc OpenAPI (Swagger UI)
