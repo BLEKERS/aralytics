@@ -30,24 +30,28 @@ backend/
 │   ├── db/migration/V1__init_postgres.sql          # ERD schema (Flyway)
 │   ├── db/seed/V2__seed_dev_postgres.sql           # demo data (`seed` profile only)
 │   └── db/migration_mysql_legacy/                  # preserved MySQL history, not on the Flyway classpath
-└── src/test/          # H2-backed MockMvc ITs + Docker-gated PostgreSQL migration IT
+├── src/test/          # H2-backed MockMvc ITs + Docker-gated PostgreSQL migration IT
+└── docker/            # postgres-init.sql (creates aralytics + aralytics_prod)
 ```
 
 ## Quick start
 
-### Option A — Docker Compose (PostgreSQL + API)
+All run modes read the single root `.env` file (copied from root `.env.example`):
 
-A single root `.env` file (copied from root `.env.example`) controls both backend and frontend via `ENV`:
+- `ENV=development` (default): Spring profiles `dev,seed` on `aralytics` DB (`V1` + `V2` seed, Swagger UI on, frontend demo prefill on).
+- `ENV=production`: Spring profile `prod` on `aralytics_prod` DB (`V1` schema only, Swagger UI off, `ProductionConfigGuard` enforced, frontend demo prefill off).
 
-- `ENV=development` (default): maps to Spring profiles `dev,seed` against `aralytics` (`V1` + `V2` seed, Swagger enabled).
-- `ENV=production`: maps to Spring profile `prod` against `aralytics_prod` (`V1` schema only, Swagger disabled, `ProductionConfigGuard` enforced — isolated so Flyway `validate-on-migrate` never collides with `V2` seed history).
+To switch modes, edit `ENV=` in root `.env` and restart the app (`docker compose up -d` or restart Maven + Vite).
 
-Run `docker compose` from the **repository root** (it reads root `.env` automatically):
+### Option A — Docker Compose (PostgreSQL + Backend API)
+
+Run `docker compose` from the **repository root** (reads root `.env` automatically):
 
 ```powershell
 # From repo root:
 Copy-Item .env.example .env   # set ENV=development or ENV=production (plus JWT_SECRET >= 32 bytes for production)
 docker compose up -d --build  # start postgres + backend (rebuild after Java edits)
+npm --prefix frontend run dev # optional: start React dev server on http://localhost:3000
 docker compose down           # stop containers
 ```
 
@@ -82,6 +86,10 @@ The API listens on `http://localhost:8080`; PostgreSQL 16 is exposed on `localho
    - Readiness / Health: <http://localhost:8080/actuator/health/readiness> (`/actuator/health` is `UP` in `prod`, or in `dev` once Gmail SMTP credentials are valid)
 
 3. Stop with `Ctrl+C`, edit `ENV` in root `.env`, and re-load `.env` in a fresh PowerShell session when switching modes. Flyway applies `V1__init_postgres.sql` everywhere; `V2__seed_dev_postgres.sql` is added only under `seed` and refused in `prod`.
+
+### Option C — One-click Windows launcher (`run-app.bat`)
+
+From the repository root, double-click `run-app.bat` (or run `.\run-app.bat`). It runs `check-env.ps1`, loads root `.env` (`ENV=development|production`), and opens both the Spring Boot backend (`:8080`) and Vite frontend (`:3000`) against local PostgreSQL 16.
 
 ### Demo credentials (dev seed)
 
