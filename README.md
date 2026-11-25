@@ -4,7 +4,7 @@ AI-powered diagnostic feedback and mastery analytics for Python / CS classrooms 
 
 ## Summary
 
-Aralytics is an AI-supported coding education platform that gives students personalized diagnostic feedback on quizzes and coding scenarios, and gives teachers class dashboards, mastery rosters, and learning analytics. The **core MVP is fully implemented**: the React frontend (13 routed screens with React 19 + Vite 8 + Tailwind CSS v4) is wired to the Spring Boot backend, covering fixed-key account activation, stateless JWT auth, teacher activity authoring, the student quiz lifecycle with durable drafts, deterministic scoring with mock AI diagnostic feedback, student/teacher dashboards, notifications, persistent teacher settings, feedback history and practice drills, and CSV/PDF report exports — all backed by PostgreSQL 16. The only post-MVP item still open is replacing the deterministic mock diagnostic engine with a live LLM. See [docs/PRD.md](./docs/PRD.md) for the product scope and [backend/README.md](./backend/README.md) for the API surface.
+Aralytics is an AI-supported coding education platform that gives students personalized diagnostic feedback on quizzes and coding scenarios, and gives teachers class dashboards, mastery rosters, and learning analytics. The **core Must-Have MVP is fully implemented** (fixed-key account activation, stateless JWT auth with `/forbidden` RBAC handling, teacher activity authoring, the student quiz lifecycle with durable drafts, deterministic scoring, and student/teacher dashboards), along with Should-Have extensions (notifications, persistent teacher settings, progress history and practice drills, CSV/PDF report exports, and the deterministic mock diagnostic engine — with live LLM integration remaining post-MVP). See [docs/PRD.md](./docs/PRD.md) for the product scope and [backend/README.md](./backend/README.md) for the API surface.
 
 ## Problem
 
@@ -25,6 +25,8 @@ Students learning to code often receive feedback that is generic or arrives too 
 | `/` | Product landing page and pilot inquiry entry point |
 | `/login` | Student/Teacher demo login |
 | `/register` | Institution-code and issued-key account activation flow UI |
+| `/forbidden` | Custom 403 access-denied page for role-mismatched routes |
+| `/profile` | Authenticated user profile and password settings |
 
 ### Student View (`frontend/src/screens/student/`)
 
