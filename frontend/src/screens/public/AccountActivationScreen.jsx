@@ -5,6 +5,7 @@ import { api, saveSession } from '../../api/client';
 import { describeApiError } from '../../components/DataState';
 
 const CURRENT_YEAR = new Date().getFullYear();
+const IS_PROD = import.meta.env.PROD || import.meta.env.VITE_APP_ENV === 'production';
 
 export default function AccountActivationScreen() {
   const navigate = useNavigate();
@@ -224,7 +225,9 @@ export default function AccountActivationScreen() {
                     <label className="font-label-lg text-body-lg font-semibold text-on-surface" htmlFor="institution-code">
                       School or Institution Code
                     </label>
-                    <span className="font-label-md text-label-md text-on-surface-variant">e.g. STJUDE-CS-2025</span>
+                    {!IS_PROD && (
+                      <span className="font-label-md text-label-md text-on-surface-variant">e.g. STJUDE-CS-2025</span>
+                    )}
                   </div>
                   <div className="relative flex items-center">
                     <span className="material-symbols-outlined absolute left-3.5 text-outline text-[22px] pointer-events-none">domain</span>
@@ -232,7 +235,7 @@ export default function AccountActivationScreen() {
                       className="w-full pl-11 pr-4 py-3.5 bg-surface-container-lowest text-on-surface font-body-md text-body-lg rounded-xl shadow-[0_1px_4px_rgba(91,75,219,0.04)] placeholder:text-outline-variant focus:outline-none focus:shadow-[0_0_0_3px_#e4dfff] transition-all uppercase tracking-wider"
                       id="institution-code"
                       onChange={(e) => setInstitutionCode(e.target.value)}
-                      placeholder="e.g. STJUDE-MNL-2025"
+                      placeholder={IS_PROD ? 'SCHOOL-CODE-2025' : 'e.g. STJUDE-MNL-2025'}
                       required
                       type="text"
                       value={institutionCode}
@@ -254,7 +257,15 @@ export default function AccountActivationScreen() {
                       className="w-full pl-11 pr-4 py-3.5 bg-surface-container-lowest text-on-surface font-body-md text-body-lg rounded-xl shadow-[0_1px_4px_rgba(91,75,219,0.04)] placeholder:text-outline-variant focus:outline-none focus:shadow-[0_0_0_3px_#e4dfff] transition-all uppercase tracking-wider"
                       id="access-key"
                       onChange={(e) => setAccessKey(e.target.value)}
-                      placeholder={isStudent ? 'KEY-8821-PY' : 'FAC-2025-DEPED'}
+                      placeholder={
+                        IS_PROD
+                          ? isStudent
+                            ? 'ACCESS-KEY'
+                            : 'FACULTY-PIN'
+                          : isStudent
+                            ? 'KEY-8821-PY'
+                            : 'FAC-2025-DEPED'
+                      }
                       required
                       type="text"
                       value={accessKey}

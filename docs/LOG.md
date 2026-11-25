@@ -184,3 +184,11 @@ Chronological log of steps taken during work sessions on this project, kept rega
 96. Added tracked `backend/.env.prod.example` and gitignored local `backend/.env.prod` (`SPRING_PROFILES_ACTIVE=prod`, `DB_NAME=aralytics_prod`, distinct 64-byte `JWT_SECRET`), parameterized `${DB_NAME:-aralytics}` in `backend/docker-compose.yml`, and added `!.env.prod.example` to `.gitignore` and `backend/.gitignore`.
 97. Verified `prod` startup on `http://localhost:8080` with `backend/.env.prod`: Flyway applied `V1` only on `aralytics_prod`, `/actuator/health` returned `UP`, Swagger returned `404`, and demo login returned `401`. Updated `docs/HANDOFF.md`, `docs/LOG.md`, and all four `README.md` files (`README.md`, `backend/README.md`, `backend/postman/README.md`, `frontend/tests/README.md`).
 98. Added zero-dependency root `switch-env.js` CLI (`dev|prod|status|stop` with `--reset-db`, `--build`, and `--kill-port`) to switch the Dockerized backend between `backend/.env` (`aralytics`) and `backend/.env.prod` (`aralytics_prod`), tagged `image: aralytics-backend:local` in `backend/docker-compose.yml` for fast cached switches, aligned `backend/.env.example` to `dev,seed`, and verified `prod`, `dev`, and `--reset-db` switches end-to-end.
+
+
+---
+
+## Session 2026-11-25 (Unified root `.env` with `ENV=development|production`)
+
+99. Replaced `switch-env.js` and dual `backend/.env` / `backend/.env.prod` templates with a single root `.env` controlled by `ENV=development|production` (mapping `development` to Spring profile group `dev,seed` on `aralytics` and `production` to `prod` on `aralytics_prod`, with `backend/docker/postgres-init.sql` auto-creating `aralytics_prod` on fresh volumes).
+100. Moved `docker-compose.yml` to the repository root, wired Vite (`frontend/vite.config.js`) with `envDir: '..'` to expose `VITE_APP_ENV` and strip demo login credentials and seeded activation hints whenever `ENV=production` or `vite build` runs, and updated `run-app.bat` plus project documentation (`README.md`, `backend/README.md`, `backend/postman/README.md`, `docs/HANDOFF.md`, `frontend/tests/README.md`).

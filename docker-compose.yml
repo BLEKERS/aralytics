@@ -4,13 +4,14 @@ services:
     container_name: aralytics-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_NAME:-aralytics}
+      POSTGRES_DB: aralytics
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./backend/docker/postgres-init.sql:/docker-entrypoint-initdb.d/01-create-dbs.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -21,7 +22,7 @@ services:
   backend:
     image: aralytics-backend:local
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
     container_name: aralytics-backend
     restart: unless-stopped
@@ -29,14 +30,16 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      ENV: ${ENV:-development}
       SERVER_PORT: 8080
-      DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-aralytics}
+      DB_HOST: postgres
+      DB_PORT: 5432
       DB_USERNAME: ${DB_USERNAME:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
       GMAIL_USERNAME: ${GMAIL_USERNAME:-}
       GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD:-}
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set to a unique secret of at least 32 bytes}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-in-production-please-0123456789}
       JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-120}
       ACTIVATION_TOKEN_TTL_MINUTES: ${ACTIVATION_TOKEN_TTL_MINUTES:-15}
       PASSWORD_RESET_TTL_MINUTES: ${PASSWORD_RESET_TTL_MINUTES:-15}
