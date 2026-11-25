@@ -37,44 +37,51 @@ backend/
 
 ### Option A — Docker Compose (PostgreSQL + API)
 
+A single root `.env` file (copied from root `.env.example`) controls both backend and frontend via `ENV`:
+
+- `ENV=development` (default): maps to Spring profiles `dev,seed` against `aralytics` (`V1` + `V2` seed, Swagger enabled).
+- `ENV=production`: maps to Spring profile `prod` against `aralytics_prod` (`V1` schema only, Swagger disabled, `ProductionConfigGuard` enforced — isolated so Flyway `validate-on-migrate` never collides with `V2` seed history).
+
+Run `docker compose` from the **repository root** (it reads root `.env` automatically):
+
 ```powershell
-cd backend
-Copy-Item .env.example .env      # then edit secrets if needed
-docker compose up --build
+# From repo root:
+Copy-Item .env.example .env   # set ENV=development or ENV=production (plus JWT_SECRET >= 32 bytes for production)
+docker compose up -d --build  # start postgres + backend (rebuild after Java edits)
+docker compose down           # stop containers
 ```
 
-The API listens on `http://localhost:8080`; PostgreSQL 16 is exposed on `localhost:5432`. Compose
-starts the app with the `prod` profile by default and refuses to start without `JWT_SECRET`. For a
-local demo, set `SPRING_PROFILES_ACTIVE=dev,seed` and a real `JWT_SECRET` in `.env`; `dev` adds
-Swagger UI and `seed` adds the demo rows.
+The API listens on `http://localhost:8080`; PostgreSQL 16 is exposed on `localhost:5432`. Fresh Docker volumes auto-create both `aralytics` and `aralytics_prod` via `backend/docker/postgres-init.sql`. If you already have a pre-existing `postgres_data` Docker volume from earlier runs, create `aralytics_prod` once inside the container (`docker exec aralytics-postgres psql -U postgres -c "CREATE DATABASE aralytics_prod;"`) or recreate the volume (`docker compose down -v`).
 
-### Option B — Local Maven + local PostgreSQL 16
+### Option B — Local Maven + PostgreSQL 16
 
-1. Install PostgreSQL 16 (or run only the database with `docker compose up -d postgres`), then
-   create the database:
+1. Install PostgreSQL 16 (or run only the database from the repo root with `docker compose up -d postgres`), then
+   ensure the databases exist:
 
    ```sql
-   CREATE DATABASE aralytics;
+   CREATE DATABASE aralytics;       -- used when ENV=development (dev,seed)
+   CREATE DATABASE aralytics_prod;  -- used when ENV=production (prod)
    ```
 
    The default local credentials are `postgres` / `postgres`; override them with `DB_USERNAME` and
    `DB_PASSWORD` if your installation uses different values. MySQL 5.5/8 is no longer the target.
 
-2. Run the app with the dev and seed profiles (schema + demo data + Swagger):
+2. Load the root `.env` file and run Spring Boot (`ENV` in `.env` selects `dev,seed` vs `prod`):
 
    ```powershell
    cd backend
-   $env:JAVA_HOME="C:\Program Files\Java\jdk-21"   # or any JDK 21+
-   .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev,seed"
+   Get-Content ..\.env | Where-Object { $_ -match '^[A-Za-z_][A-Za-z0-9_]*=.+' } | ForEach-Object { $k,$v = $_ -split '=',2; Set-Item "Env:$k" $v }
+   .\mvnw.cmd spring-boot:run
    ```
 
-   Dev-only URLs:
-   - Swagger UI: <http://localhost:8080/swagger-ui.html>
-   - OpenAPI JSON: <http://localhost:8080/v3/api-docs>
-   - Health: <http://localhost:8080/actuator/health>
+   *(Empty `GMAIL_USERNAME` / `GMAIL_APP_PASSWORD` values in `dev` default cleanly to blank; in `production`, `ProductionConfigGuard` enforces a non-default `JWT_SECRET` of at least 32 bytes.)*
 
-3. Stop with `Ctrl+C`. Flyway applies `V1__init_postgres.sql`; `V2__seed_dev_postgres.sql` is added
-   only under the `seed` profile. With `prod` no demo rows are loaded.
+   URLs:
+   - Swagger UI (`dev` only): <http://localhost:8080/swagger-ui.html>
+   - OpenAPI JSON (`dev` only): <http://localhost:8080/v3/api-docs>
+   - Readiness / Health: <http://localhost:8080/actuator/health/readiness> (`/actuator/health` is `UP` in `prod`, or in `dev` once Gmail SMTP credentials are valid)
+
+3. Stop with `Ctrl+C`, edit `ENV` in root `.env`, and re-load `.env` in a fresh PowerShell session when switching modes. Flyway applies `V1__init_postgres.sql` everywhere; `V2__seed_dev_postgres.sql` is added only under `seed` and refused in `prod`.
 
 ### Demo credentials (dev seed)
 
@@ -89,20 +96,25 @@ reuse them in a real deployment.
 
 ## Configuration
 
-All runtime configuration is environment-overridable (see `.env.example`):
+All runtime configuration is environment-overridable via the root `.env` (see root `.env.example`):
 
 | Variable | Default | Purpose |
 |---|---|---|
+| `ENV` | `development` | `development` activates profile group `dev,seed` (`aralytics`); `production` activates `prod` (`aralytics_prod`) |
 | `SERVER_PORT` | `8080` | HTTP port |
-| `DB_URL` | `jdbc:postgresql://localhost:5432/aralytics` | JDBC URL |
+| `DB_HOST` / `DB_PORT` | `localhost` / `5432` | PostgreSQL host and port (Compose overrides `DB_HOST=postgres`) |
+| `DB_URL` | `jdbc:postgresql://${DB_HOST}:${DB_PORT}/aralytics` | JDBC URL (defaults to `aralytics` in `dev` and `aralytics_prod` in `prod`) |
 | `DB_USERNAME` / `DB_PASSWORD` | `postgres` / `postgres` | Database credentials |
 | `DB_POOL_SIZE` | `10` | Hikari maximum pool size |
 | `JWT_SECRET` | dev-only placeholder | HS256 signing key, **≥ 32 bytes**; `prod` refuses the placeholder |
 | `JWT_EXPIRATION_MINUTES` | `120` | Token lifetime |
 | `ACTIVATION_TOKEN_TTL_MINUTES` | `15` | Single-use activation-token lifetime |
+| `PASSWORD_RESET_TTL_MINUTES` | `15` | Password-reset token lifetime |
+| `GMAIL_USERNAME` / `GMAIL_APP_PASSWORD` | _(empty)_ | Optional Gmail SMTP credentials for password-reset emails under `dev` |
 | `INTERVENTION_THRESHOLD` | `70` | Mastery percentage below which a student is flagged |
-| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | Allowed browser origins |
-| `SPRING_PROFILES_ACTIVE` | _(none)_ | `dev` adds Swagger; `seed` adds demo rows (refused in `prod`); `prod` is schema-only; `ai` enables the LLM adapter |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | Allowed browser origins (comma-separated) |
+| `FRONTEND_BASE_URL` | `http://localhost:3000` | Base URL embedded in password-reset links |
+| `SPRING_PROFILES_ACTIVE` | `${ENV:development}` | Driven by `ENV` via profile groups (`development`→`dev,seed`, `production`→`prod`); `ai` enables the LLM adapter |
 | `AI_BASE_URL` | _(empty)_ | Base URL for the `ai` profile adapter; empty or failure falls back to the mock engine |
 
 Profiles:

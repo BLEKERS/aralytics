@@ -7,8 +7,21 @@ server:
 spring:
   application:
     name: aralytics-backend
+  profiles:
+    active: ${ENV:development}
+    group:
+      development:
+        - dev
+        - seed
+      dev:
+        - dev
+        - seed
+      production:
+        - prod
+      prod:
+        - prod
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/aralytics}
+    url: ${DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/aralytics}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver

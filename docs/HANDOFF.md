@@ -6,7 +6,7 @@
 
 ## 1. Project Overview
 
-**Aralytics** (also branded **Aralytics Pilipinas AI**) is a Philippine CS / Python coding classroom and diagnostic analytics platform. The React 19 + Vite 8 + Tailwind CSS v4 frontend lives in `frontend/` and is organized into three role-separated views:
+**Aralytics** (also branded **Aralytics Pilipinas AI**) is a Philippine CS / Python coding classroom and diagnostic analytics platform. The repository combines a Spring Boot 3.4.13 + PostgreSQL 16 REST API in `backend/` (`http://localhost:8080`, see [`../backend/README.md`](../backend/README.md)) with a React 19 + Vite 8 + Tailwind CSS v4 SPA in `frontend/` (`http://localhost:3000`) organized into three role-separated views:
 1. **Public & Authentication View** (`frontend/src/screens/public/`):
    - Public Marketing Landing Page (`/`)
    - Unified Student / Teacher Login (`/login`)
@@ -37,11 +37,25 @@ The UI is converted 1:1 from 13 Google Stitch HTML exports located in `screens/s
 | Styling | `tailwindcss@^4.2.2`, `@tailwindcss/vite@^4.2.2` | Configured via `@theme` block in `frontend/src/index.css` (no `tailwind.config.js`) |
 | Bundler | `vite@^8.0.0`, `@vitejs/plugin-react@^6.0.0` | Dev server on `http://localhost:3000` |
 | Linter | `oxlint@^1.51.0` | `npm run lint` (`oxlint`) inside `frontend/` |
+| Backend API | Spring Boot `3.4.13` (Java 21, Maven wrapper) | Stateless HS256 JWT (`jjwt@0.12.7`), RFC 7807 errors, port `8080` |
+| Database | PostgreSQL `16` + Flyway (`ddl-auto: validate`) | `aralytics` (`dev,seed`: `V1` + `V2`) and `aralytics_prod` (`prod`: `V1` only) |
 
-### Commands (run from `frontend/` or with `--prefix frontend`)
+### Frontend Commands (run from `frontend/` or with `--prefix frontend`)
 - `npm --prefix frontend run dev` — start Vite dev server
 - `npm --prefix frontend run build` — production bundle into `frontend/dist/`
 - `npm --prefix frontend run lint` — run `oxlint` across `frontend/src/`
+
+### Backend Commands & Environment Switching
+A single root `.env` (copied from `.env.example`) controls both backend and frontend via `ENV`, isolating `dev,seed` (`aralytics` DB) from `prod` (`aralytics_prod` DB) so switching modes never triggers Flyway `V2` validation conflicts:
+- **`ENV=development` (default)**: backend runs `dev,seed` on `aralytics` (Swagger UI + demo accounts); Vite `npm run dev` enables demo login pre-fill and seeded activation hints.
+- **`ENV=production`**: backend runs `prod` on `aralytics_prod` (schema-only, Swagger off, `ProductionConfigGuard` requires `JWT_SECRET` >= 32 bytes); Vite strips demo credentials and seeded activation hints.
+- **Docker Compose (run from repo root — reads root `.env` automatically)**:
+  - `docker compose up -d` — start PostgreSQL 16 + backend (`--build` rebuilds after Java edits)
+  - `docker compose up -d postgres` — start PostgreSQL 16 container (`aralytics-postgres` on `:5432`); fresh volumes auto-create `aralytics` and `aralytics_prod` via `backend/docker/postgres-init.sql` (if you have a pre-existing `postgres_data` volume, run `docker exec aralytics-postgres psql -U postgres -c "CREATE DATABASE aralytics_prod;"` once)
+  - `docker compose down` — stop containers
+- **Local Maven (run from `backend/`)**:
+  - Load root `..\.env` into `Env:`, then `.\mvnw.cmd spring-boot:run` (honors `ENV=development|production`)
+  - `.\mvnw.cmd -B verify` — run JUnit 5 + MockMvc + Testcontainers suite
 
 ---
 

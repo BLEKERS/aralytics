@@ -5,8 +5,9 @@ import { api, saveSession } from '../../api/client';
 import { DataError } from '../../components/DataState';
 
 const CURRENT_YEAR = new Date().getFullYear();
+const IS_PROD = import.meta.env.PROD || import.meta.env.VITE_APP_ENV === 'production';
 
-const KEY_PLACEHOLDERS = import.meta.env.PROD
+const KEY_PLACEHOLDERS = IS_PROD
   ? { school: 'SCHOOL-CODE-2025', student: 'ACCESS-KEY', educator: 'FACULTY-PIN' }
   : { school: 'e.g. STJUDE-MNL-2025', student: 'KEY-8821-PY', educator: 'FAC-2025-DEPED' };
 
@@ -222,7 +223,9 @@ export default function AccountActivationScreen() {
                     <label className="font-label-lg text-[15px] font-semibold text-on-surface" htmlFor="institution-code">
                       School or Institution Code
                     </label>
-                    <span className="font-label-md text-label-md text-on-surface-variant">e.g. SCHOOL-CS-2025</span>
+                    {!IS_PROD && (
+                      <span className="font-label-md text-label-md text-on-surface-variant">e.g. STJUDE-CS-2025</span>
+                    )}
                   </div>
                   <div className="relative flex items-center">
                     <span className="material-symbols-outlined absolute left-3.5 text-outline text-[22px] pointer-events-none">domain</span>
