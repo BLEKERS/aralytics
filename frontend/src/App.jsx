@@ -22,6 +22,7 @@ import ActivitiesQuizManagement from './screens/teacher/ActivitiesQuizManagement
 import ClassReportsLearningAnalytics from './screens/teacher/ClassReportsLearningAnalytics'
 import TeacherClassroomSettings from './screens/teacher/TeacherClassroomSettings'
 // Shared
+import ForbiddenScreen from './screens/shared/ForbiddenScreen'
 import ProfileScreen from './screens/shared/ProfileScreen'
 
 function RequireAuth({ role, children }) {
@@ -37,7 +38,8 @@ function RequireAuth({ role, children }) {
     return (
       <Navigate
         replace
-        to={userRole === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard'}
+        state={{ from: location.pathname, requiredRole: role, currentRole: userRole }}
+        to="/forbidden"
       />
     )
   }
@@ -102,7 +104,8 @@ export default function App() {
           <Route element={<RequireAuth role="TEACHER"><TeacherClassroomSettings /></RequireAuth>} path="/teacher/settings" />
           <Route element={<Navigate replace to="/teacher/dashboard" />} path="/teacher" />
 
-          {/* Shared authenticated pages */}
+          {/* Shared pages */}
+          <Route element={<ForbiddenScreen />} path="/forbidden" />
           <Route element={<RequireAuth><ProfileScreen /></RequireAuth>} path="/profile" />
 
           {/* Legacy flat teacher paths */}

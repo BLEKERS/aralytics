@@ -132,6 +132,7 @@ aralytics/
             │   ├── ForgotPasswordScreen.jsx # Route: /forgot-password
             │   └── ResetPasswordScreen.jsx # Route: /reset-password
             ├── shared/
+            │   ├── ForbiddenScreen.jsx     # Route: /forbidden          (403 role-mismatch / access-denied page)
             │   └── ProfileScreen.jsx       # Route: /profile            (Teacher AppShell or StudentHeader)
             ├── student/                    # Student View screens (standalone top navbar wired to /student/*)
             │   ├── StudentDashboard.jsx    # Route: /student/dashboard  <- screens/stitch/portal/code.html
