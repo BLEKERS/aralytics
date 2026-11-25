@@ -50,9 +50,10 @@ function RequireAuth({ role, children }) {
 function AppShell({ children }) {
   const [navOpen, setNavOpen] = useState(false)
   const { pathname } = useLocation()
+  const session = getSession()
+  const isTeacher = Boolean(session?.token && session?.user?.role === 'TEACHER')
   const inTeacherApp =
-    pathname.startsWith('/teacher/') ||
-    (pathname === '/profile' && getSession()?.user?.role === 'TEACHER')
+    isTeacher && (pathname.startsWith('/teacher/') || pathname === '/profile')
 
   if (!inTeacherApp) return children
 
