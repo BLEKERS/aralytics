@@ -1,96 +1,103 @@
-# Aralytics — Frontend Architecture
+# Aralytics — System Architecture
 
-Purpose: describe the current structure of the Aralytics frontend so contributors can navigate the codebase and understand where a backend/AI service will plug in later.
+Purpose: describe the current structure of the Aralytics full-stack application so contributors can navigate the frontend, backend API, persistence layer, and diagnostic engine seam.
 
-Status: **frontend-only prototype** (React 19 + Vite 8 + Tailwind CSS v4), converted 1:1 from 13 Google Stitch HTML exports. No service tier exists yet — all data is sample data rendered from local component state.
+Status: **Full-stack MVP implemented** — React 19 + Vite 8 + Tailwind CSS v4 SPA in `frontend/` (`http://localhost:3000`) wired via `frontend/src/api/client.js` to the Spring Boot 3.4.13 / Java 21 REST API in `backend/` (`http://localhost:8080`) backed by PostgreSQL 16 + Flyway. Diagnostic feedback runs through `DiagnosticEngine` (`MockDiagnosticEngine` by default; `LlmDiagnosticEngine` stub under the `ai` profile).
 
 ## High-Level Diagram
 
 ```
-+------------------------------------------
-|                BROWSER
-|   http://localhost:3000 (Vite dev server)
-+---------------------+--------------------
++------------------------------------------+
+|                 BROWSER                  |
+|   http://localhost:3000 (Vite dev server)|
++---------------------+--------------------+
                       |
                       v
-+------------------------------------------
-|         React SPA  (frontend/src)
-|
-|  [ Public & Auth screens ]   /, /login, /register
-|         standalone header/footer
-|  [ Student screens ]         /student/*
-|         standalone header/footer
-|  [ Teacher screens ]         /teacher/*
-|         AppShell (Sidebar + TopBar)
-|
-|  State: local useState + sample data (no persistence)
-+---------------------+--------------------
-                      |
-        (planned, NOT implemented)
-                      |
++------------------------------------------+
+|         React SPA  (frontend/src)        |
+|                                          |
+|  [ Public & Auth ] /, /login, /register, |
+|    /forgot-password, /reset-password     |
+|  [ Shared ]        /profile              |
+|  [ Student ]       /student/*            |
+|  [ Teacher ]       /teacher/* (AppShell) |
+|                                          |
+|  API client: frontend/src/api/client.js  |
+|  Auth: stateless Bearer JWT in session   |
++---------------------+--------------------+
+                      | HTTP JSON (Authorization: Bearer <jwt>)
                       v
-+------------------------------------------
-|     Backend / AI service  (future)
-|  REST surface: /api/* as documented in
-|  NAVIGATION.md  (/api/public, /api/auth,
-|  /api/student, /api/teacher)
-+------------------------------------------
++------------------------------------------+
+|   Spring Boot 3.4.13 API  (backend/)     |
+|   http://localhost:8080                  |
+|                                          |
+|  /api/public/*   /api/auth/*             |
+|  /api/student/*  /api/teacher/*          |
+|  Security: Spring Security + HS256 JWT   |
+|  Diagnostics: DiagnosticEngine seam      |
++---------------------+--------------------+
+                      | Spring Data JPA + Flyway (ddl-auto: validate)
+                      v
++------------------------------------------+
+|        PostgreSQL 16  (:5432)            |
+|  aralytics (dev,seed) / aralytics_prod   |
++------------------------------------------+
 ```
 
-The browser talks only to the Vite dev server today. The `/api/*` endpoints listed in `NAVIGATION.md` (section 2) are the planned integration surface — they are documented, not implemented, and no API client exists in `frontend/src`.
+See [`../backend/README.md`](../backend/README.md) and [`NAVIGATION.md`](./NAVIGATION.md) for the complete REST surface (implemented endpoints and the 6 deferred `501` teacher endpoints).
 
-## Route Map (13 routes)
+## Route Map
 
-Derived from `HANDOFF.md` section 4. Core routes only; `App.jsx` also defines backwards-compatible redirects (`/home`, `/student`, `/dashboard`, etc.) — see `App.jsx` for the full list.
+Derived from `HANDOFF.md` section 4. Core routes only; `App.jsx` also defines backwards-compatible redirects (`/home`, `/student`, `/dashboard`, `/activate`, etc.) — see `frontend/src/App.jsx` for the full list.
 
 | Route | Component | Layout Chrome |
 |---|---|---|
 | `/` | `frontend/src/screens/public/LandingPage.jsx` | Standalone (public marketing header + footer) |
 | `/login` | `frontend/src/screens/public/LoginScreen.jsx` | Standalone (auth header + split card + footer) |
 | `/register` | `frontend/src/screens/public/AccountActivationScreen.jsx` | Standalone (auth header + split card + footer) |
+| `/forgot-password` | `frontend/src/screens/public/ForgotPasswordScreen.jsx` | Standalone (auth header + card + footer) |
+| `/reset-password` | `frontend/src/screens/public/ResetPasswordScreen.jsx` | Standalone (auth header + card + footer) |
+| `/profile` | `frontend/src/screens/shared/ProfileScreen.jsx` | Role-aware (`AppShell` for Teacher, `StudentHeader` for Student) |
 | `/student/dashboard` | `frontend/src/screens/student/StudentDashboard.jsx` | Standalone (student portal header + mobile nav + footer) |
 | `/student/activities` | `frontend/src/screens/student/StudentMyActivities.jsx` | Standalone (student activities header + mobile nav + footer) |
 | `/student/quiz` | `frontend/src/screens/student/StudentLiveQuiz.jsx` | Standalone (student quiz header + sticky submit footer) |
 | `/student/feedback` | `frontend/src/screens/student/StudentDiagnosticReport.jsx` | Standalone (student feedback header + practice modal + footer) |
 | `/student/progress` | `frontend/src/screens/student/StudentProgressHistory.jsx` | Standalone (student progress header + diagnostic modal + footer) |
-| `/teacher/dashboard` | `frontend/src/screens/teacher/TeacherDashboard.jsx` | `AppShell` (Sidebar + TopBar) |
-| `/teacher/students` | `frontend/src/screens/teacher/StudentsMasteryRoster.jsx` | `AppShell` (Sidebar + TopBar) |
-| `/teacher/activities` | `frontend/src/screens/teacher/ActivitiesQuizManagement.jsx` | `AppShell` (Sidebar + TopBar) |
-| `/teacher/reports` | `frontend/src/screens/teacher/ClassReportsLearningAnalytics.jsx` | `AppShell` (Sidebar + TopBar) |
-| `/teacher/settings` | `frontend/src/screens/teacher/TeacherClassroomSettings.jsx` | `AppShell` (Sidebar + TopBar) |
+| `/teacher/dashboard` | `frontend/src/screens/teacher/TeacherDashboard.jsx` | `AppShell` (`Sidebar` + `TopBar`) |
+| `/teacher/students` | `frontend/src/screens/teacher/StudentsMasteryRoster.jsx` | `AppShell` (`Sidebar` + `TopBar`) |
+| `/teacher/activities` | `frontend/src/screens/teacher/ActivitiesQuizManagement.jsx` | `AppShell` (`Sidebar` + `TopBar`) |
+| `/teacher/reports` | `frontend/src/screens/teacher/ClassReportsLearningAnalytics.jsx` | `AppShell` (`Sidebar` + `TopBar`) |
+| `/teacher/settings` | `frontend/src/screens/teacher/TeacherClassroomSettings.jsx` | `AppShell` (`Sidebar` + `TopBar`) |
 
 ## Layout Architecture
 
 The app has a two-mode layout split, conditional in `frontend/src/App.jsx`:
 
-- **AppShell (Teacher View)** — `AppShell.jsx` is active only when the pathname starts with `/teacher/`. It renders the fixed left `Sidebar.jsx`, a sticky `TopBar.jsx`, and wraps children in `<main>`. It also owns a responsive mobile slide-over drawer (`lg:hidden`) triggered by the hamburger button in `TopBar`, with a backdrop overlay that closes the drawer on click.
-- **Standalone chrome (Public/Auth + Student View)** — screens under `frontend/src/screens/public/` and `frontend/src/screens/student/` render their own header and footer from their respective Stitch exports and bypass `AppShell`. Student screens keep their Stitch top navigation (wired to `/student/*` and `/login`) and provide a responsive `xl:hidden` hamburger menu for smaller screens.
-- **Role separation** — public/auth, student, and teacher screens live in separate directories (`screens/public/`, `screens/student/`, `screens/teacher/`) and journey logically from `/login` into the matching dashboard. Teacher screens render only the inner content of `<main>`; all shared chrome comes from AppShell.
+- **AppShell (Teacher View)** — defined in `frontend/src/App.jsx`, active when the pathname starts with `/teacher/` or equals `/profile` for a teacher. It renders the fixed left `Sidebar.jsx`, sticky `TopBar.jsx`, wraps children in `<main>`, and owns the responsive mobile slide-over drawer (`lg:hidden`).
+- **Standalone chrome (Public/Auth + Student View)** — screens under `frontend/src/screens/public/` and `frontend/src/screens/student/` render their own header (`StudentHeader.jsx` for student screens) and footer and bypass `AppShell`.
+- **Role separation** — public/auth, shared, student, and teacher screens live in separate directories (`screens/public/`, `screens/shared/`, `screens/student/`, `screens/teacher/`). `RequireAuth` guards `/student/*`, `/teacher/*`, and `/profile`.
 
 ## Design System
 
-- **Tokens** live in the `@theme` block of `frontend/src/index.css` (Material-3-inspired palette, fonts, radii, custom spacing). Do not duplicate token values here — the canonical list is in `HANDOFF.md` section 3.
-- **Brand identity**: `frontend/src/components/BrandLogo.jsx` is the single source of the header brand lockup. Use it on every public/auth/student header and in the teacher `Sidebar`; do not hand-roll alternate logo marks or place it in footers.
+- **Tokens** live in the `@theme` block of `frontend/src/index.css` (Material-3-inspired palette, fonts, radii, custom spacing). Canonical token list: `HANDOFF.md` section 3.
+- **Brand identity**: `frontend/src/components/BrandLogo.jsx` is the single source of the header brand lockup. Use it on every public/auth/student header and in the teacher `Sidebar`; do not place it in footers.
 - **Icons**: Google Material Symbols Outlined (`.material-symbols-outlined`, configured in `frontend/src/index.css`).
-- **Responsive convention**: teacher multi-column grids switch at `xl` (1280px), not `lg`, because the fixed sidebar occupies ~250px from `lg` up.
+- **Responsive convention**: teacher multi-column grids switch at `xl` (1280px), not `lg`, because the fixed sidebar occupies 250px from `lg` up.
 
 ## Tooling & Quality Gates
 
-Frontend tooling (run from `frontend/` or with `npm --prefix frontend`):
+- **Frontend** (run from `frontend/` or with `npm --prefix frontend`): `dev` (port `3000`), `build` (`frontend/dist/`), `lint` (`oxlint`).
+- **Backend** (run from `backend/`): `.\mvnw.cmd -B verify` (JUnit 5 unit tests + H2 MockMvc ITs + Docker-gated PostgreSQL 16 Testcontainers IT).
 
-- `dev` — Vite dev server on port 3000 (`frontend/vite.config.js`).
-- `build` — production bundle into `frontend/dist/`.
-- `lint` — `oxlint` across `frontend/src/`.
+**Quality gate: frontend `lint` + `build` and backend `verify` must pass before merge.**
 
-**Quality gate: `lint` and `build` must pass before any merge.**
+## Data, Persistence & Environment Switching
 
-## Data & State
-
-- Currently **local component state (`useState`) + hardcoded sample data only**. There is no persistence layer, no store library, and no API client in the codebase.
-- All backend integration is deferred; the planned REST surface (`/api/public/*`, `/api/auth/*`, `/api/student/*`, `/api/teacher/*`) is documented endpoint-by-endpoint in `NAVIGATION.md` section 2. When a backend lands, it plugs in behind those endpoints without changing the route map.
+- **Persistence**: PostgreSQL 16 with Flyway migrations (`V1__init_postgres.sql`, 19 tables) and `ddl-auto: validate`. Quiz drafts (`QUIZ_DRAFT`), teacher settings (`TEACHER_SETTINGS`), password reset tokens (`PASSWORD_RESET_TOKEN`), and pilot inquiries (`PILOT_INQUIRY`) are stored in the database.
+- **Unified `.env`**: a single root `.env` (`ENV=development|production`) isolates `dev,seed` (`aralytics` DB, Swagger on, demo credentials prefilled) from `prod` (`aralytics_prod` DB, schema-only, Swagger off, `ProductionConfigGuard` enforced).
+- **Frontend API layer**: `frontend/src/api/client.js` and `useApiResource.js` handle Bearer JWT injection, `401` redirects, and RFC 7807 error parsing rendered via `DataState.jsx`.
 
 ## Testing Pointer
 
-- Current checks are E2E-style, run manually with **Playwright MCP against the dev server** (`http://localhost:3000`): page loads, responsive overflow checks, and key role flows.
-- A unit test runner has **not been chosen yet** (frontend test files do not exist yet).
-- Conventions and planned checks for `frontend/tests/` are described in [`frontend/tests/README.md`](../frontend/tests/README.md).
+- **Backend**: `.\mvnw.cmd -B verify` runs `MockDiagnosticEngineTest`, `ReportServiceTest`, `AuthFlowIT`, `PilotInquiryIT`, `QuizLifecycleIT`, `AuthorizationIT`, `SubmitIdempotencyIT`, and Docker-gated `EndToEndPostgresTest`.
+- **Frontend**: E2E/visual checks via Playwright MCP against `http://localhost:3000`; unit test runner is not chosen yet. See [`../frontend/tests/README.md`](../frontend/tests/README.md).

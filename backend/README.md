@@ -1,10 +1,6 @@
-# Aralytics Backend (40% milestone)
+# Aralytics Backend
 
-Spring Boot REST API for Aralytics: fixed-key account activation, stateless JWT auth, teacher
-activity authoring, the student quiz lifecycle, synchronous diagnostic feedback, and the
-student/teacher dashboards. The 40% milestone is deliberately narrow: endpoints that the
-frontend links to but that are not in this milestone answer **501 Not Implemented** instead of
-returning fabricated data (see [Deferred endpoints](#deferred-endpoints-501)).
+Spring Boot REST API for Aralytics: fixed-key account activation, stateless JWT auth, password reset and profile management, pilot inquiry capture, teacher activity authoring, the student quiz lifecycle with durable drafts, synchronous diagnostic feedback with practice drills, notifications, persistent teacher settings, CSV/PDF report exports, and student/teacher dashboards. Deferred post-MVP endpoints answer **501 Not Implemented** instead of returning fabricated data.
 
 - **Java 21**, **Spring Boot 3.4.13**, Maven wrapper (`./mvnw` / `mvnw.cmd`)
 - **PostgreSQL 16** via Spring Data JPA + **Flyway** migrations (`ddl-auto: validate`)
@@ -18,13 +14,13 @@ returning fabricated data (see [Deferred endpoints](#deferred-endpoints-501)).
 backend/
 ├── src/main/java/ph/aralytics/backend/
 │   ├── ai/            # DiagnosticEngine, deterministic MockDiagnosticEngine, LLM stub adapter
-│   ├── config/        # Security, CORS, Jackson, OpenAPI, @ConfigurationProperties
-│   ├── domain/        # JPA entities matching the ERD
-│   ├── exception/     # API exceptions + RFC 7807 GlobalExceptionHandler
+│   ├── config/        # Security, CORS, Jackson, OpenAPI, ProductionConfigGuard, @ConfigurationProperties
+│   ├── domain/        # JPA entities matching the ERD + drafts, settings, reset tokens, pilot inquiries
+│   ├── exception/     # API exceptions (incl. 429/501) + RFC 7807 GlobalExceptionHandler
 │   ├── repository/    # Spring Data repositories
-│   ├── security/      # JWT service/filter, denylist, UserDetails adapter
-│   ├── service/       # Auth, quiz authoring/taking, submissions, diagnostics, dashboards
-│   └── web/           # auth, public, student, teacher controllers + DTOs
+│   ├── security/      # JWT service/filter, denylist, AuthRateLimiter, UserDetails adapter
+│   ├── service/       # Auth, password reset, quizzes, durable drafts, submissions, diagnostics, reports, settings, notifications
+│   └── web/           # auth, public, student, teacher, notifications controllers + DTOs
 ├── src/main/resources/
 │   ├── application.yml, application-dev.yml, application-prod.yml, application-seed.yml
 │   ├── db/migration/V1__init_postgres.sql          # ERD schema (Flyway)
@@ -144,12 +140,17 @@ All request/response bodies are JSON. Authenticated routes require
 
 | Method | Path | Auth | Notes |
 |---|---|---|---|
-| `POST` | `/api/auth/verify-key` | public | `{institutionCode, accessKey, role}` → single-use `activationToken`, role, school name. No account is created. |
+| `POST` | `/api/auth/verify-key` | public | `{institutionCode, accessKey, role}` → single-use `activationToken`, role, school name. No account is created. Rate-limited (`429`). |
 | `POST` | `/api/auth/activate` | public | `{activationToken, fullName, email, password, username?}` → `201` + JWT, user, classes. Links the new account to a class/enrollment. |
-| `POST` | `/api/auth/login` | public | `{identifier, password}` where identifier is email or username → JWT, user, classes. |
+| `POST` | `/api/auth/login` | public | `{identifier, password}` where identifier is email or username → JWT, user, classes. Rate-limited (`429`). |
+| `POST` | `/api/auth/forgot-password` | public | `{email}` → `204`; issues a short-lived reset token and sends reset email when SMTP is configured. |
+| `POST` | `/api/auth/reset-password` | public | `{token, newPassword}` → `204`; consumes the reset token and updates the password hash. |
 | `POST` | `/api/auth/logout` | bearer | `204`; adds the JWT to an in-memory denylist. |
 | `GET` | `/api/auth/me` | bearer | Current user, school, and linked classes. |
-| `POST` | `/api/public/pilot-inquiry` | public | **501** (lead capture deferred). |
+| `GET` | `/api/auth/profile` | bearer | Read current user's profile details. |
+| `PUT` | `/api/auth/profile` | bearer | Update current user's profile details. |
+| `PUT` | `/api/auth/profile/password` | bearer | Change password (verifies current password). |
+| `POST` | `/api/public/pilot-inquiry` | public | `201`; validates and persists a landing-page pilot inquiry to `PILOT_INQUIRY`. |
 
 ### Student
 
@@ -157,19 +158,15 @@ All request/response bodies are JSON. Authenticated routes require
 |---|---|---|
 | `GET` | `/api/student/dashboard` | Assigned/completed counts, recent scores, 7-day streak, concept mastery. |
 | `GET` | `/api/student/progress` | Concept mastery for the authenticated student. |
+| `GET` | `/api/student/progress/history?search=` | Past submissions with feedback status, searchable by quiz title. |
 | `GET` | `/api/student/activities?category=all\|assigned\|remedial\|completed` | Published activities for the student's classes, with score/submission status. |
-| `GET` | `/api/student/quiz/{quizId}` | Published quiz for an enrolled student. **Never includes `correctAnswer`**; includes any saved draft answer. |
-| `PATCH` | `/api/student/quiz/{quizId}/answer` | `{questionId, selectedOption}`; idempotent draft save. |
+| `GET` | `/api/student/quiz/{quizId}` | Published quiz for an enrolled student. **Never includes `correctAnswer`**; includes any saved draft answers. |
+| `PATCH` | `/api/student/quiz/{quizId}/answer` | `{questionId, selectedOption}`; idempotent durable draft save (`QUIZ_DRAFT`). |
 | `POST` | `/api/student/quiz/{quizId}/submit` | `{answers:[{questionId, selectedOption}]}`; deterministic scoring + feedback. `200` when feedback is READY, `202` when PENDING. Second submission → `409`. |
 | `GET` | `/api/student/feedback/{submissionId}` | Owner-only feedback; `202` + `status=PENDING` while generation is outstanding. |
 | `POST` | `/api/student/feedback/{submissionId}/retry` | Re-runs feedback generation; `200`/`202`. |
-
-Deferred student routes (all return **501**): `PATCH /api/student/preferences`,
-`POST /api/student/office-hours/book`, `POST /api/student/quiz/{quizId}/flag`,
-`GET /api/student/feedback/{submissionId}/pdf`,
-`POST /api/student/feedback/{submissionId}/practice-drill`,
-`GET /api/student/progress/history`, `GET /api/student/progress/report/{reportId}`,
-`POST /api/student/progress/notes`.
+| `POST` | `/api/student/feedback/{submissionId}/practice-drill` | Generates a 3-question practice drill targeting weak concepts from the feedback. |
+| `GET` | `/api/student/notifications` | In-app notifications for the authenticated student, newest first. |
 
 ### Teacher
 
@@ -183,11 +180,13 @@ Deferred student routes (all return **501**): `PATCH /api/student/preferences`,
 | `GET` | `/api/teacher/students?search=&topic=&status=below\|above&page=1&size=20` | Paginated roster restricted to the teacher's own students. |
 | `GET` | `/api/teacher/students/{studentId}` | Student deep-dive: average, concept mastery, feedback delivered to the student. |
 | `GET` | `/api/teacher/students/{studentId}/diagnostic` | Same diagnostic drill-down (alias used by the frontend). |
+| `GET` | `/api/teacher/reports/export-csv?topic=` | Download class roster and scores as UTF-8 CSV. |
+| `GET` | `/api/teacher/reports/export-pdf?section=&topic=` | Download cohort analytics PDF. |
+| `GET` / `PUT` | `/api/teacher/settings` | Read or update persisted teacher settings (intervention threshold, feedback tone; creates defaults on first read). |
+| `GET` | `/api/teacher/notifications` | In-app notifications for the authenticated teacher, newest first. |
 
-Deferred teacher routes (all return **501**): `POST /api/teacher/activities/ai-generate`,
+Deferred teacher routes (return **501 Not Implemented**): `POST /api/teacher/activities/ai-generate`,
 `POST /api/teacher/diagnostics/run`, `GET /api/teacher/dashboard/export-csv`,
-`GET /api/teacher/reports`, `GET /api/teacher/reports/export-csv`,
-`GET /api/teacher/reports/export-pdf`, `GET|PUT /api/teacher/settings`,
 `POST /api/teacher/students/{studentId}/nudge`, `POST /api/teacher/students/batch-nudge`,
 `PUT /api/teacher/students/{studentId}/private-log`.
 
@@ -206,6 +205,8 @@ Deferred teacher routes (all return **501**): `POST /api/teacher/activities/ai-g
   feedback, and drafts; submissions require enrollment in the quiz's class.
 - **401/403 are JSON**, produced by a custom `AuthenticationEntryPoint` / `AccessDeniedHandler`
   and `GlobalExceptionHandler`, never an HTML error page.
+- **Auth rate limiting**: `AuthRateLimiter` caps failed public auth attempts at 5 per IP + identifier
+  per minute (`429 Too Many Requests`).
 - CORS allows only the configured frontend origins and disallows credentialed requests, since
   the JWT travels in the `Authorization` header.
 
@@ -256,7 +257,8 @@ feedback source can change without touching services:
 | `403` | Wrong role, teacher accessing another teacher's activity, student reading another student's feedback, non-enrolled student |
 | `404` | Missing resource or a published-only route hit by a draft |
 | `409` | Re-submitting an already-submitted quiz |
-| `501` | Endpoint intentionally deferred beyond this milestone |
+| `429` | Too many failed auth attempts (`AuthRateLimiter`: 5/min per IP + identifier) |
+| `501` | Endpoint intentionally deferred beyond the current MVP |
 
 ## Tests
 
@@ -269,7 +271,9 @@ $env:JAVA_HOME="C:\Program Files\Java\jdk-21"   # JDK 21+
 | Test | What it covers |
 |---|---|
 | `MockDiagnosticEngineTest` | Feedback length, concept selection/cap, fallback, no answer leakage |
-| `AuthFlowIT` | verify-key → activate → me → login → logout; invalid/reused activation tokens; 401 problem JSON |
+| `ReportServiceTest` | Roster CSV and cohort analytics PDF export generation |
+| `AuthFlowIT` | verify-key → activate → me → login → logout → profile/password reset; invalid/reused activation tokens; 401/429 problem JSON |
+| `PilotInquiryIT` | Public pilot-inquiry persistence and validation |
 | `QuizLifecycleIT` | Teacher create/update/publish → student list/load/save draft/submit → feedback/dashboard; draft invisibility |
 | `AuthorizationIT` | 401/403 boundaries, cross-teacher activity access, cross-student feedback access, roster isolation |
 | `SubmitIdempotencyIT` | Second submit → 409, duplicate/empty/foreign answers → 400, non-enrolled/no-draft → 403/404 |
@@ -280,23 +284,21 @@ Functional ITs use H2 in PostgreSQL mode with Hibernate `create-drop` and an H2-
 Testcontainers and auto-skips when no Docker daemon is reachable, so run `verify` where Docker
 exists to exercise the real migrations.
 
-## Known limitations (40% milestone)
+## Known limitations
 
 These are intentional, documented gaps rather than silent failures:
 
-- **Deferred features return 501**: reports/exports, notification delivery and nudges,
-  practice drills, settings persistence, private teacher notes, student preferences/notes,
-  office-hours booking, question flagging, feedback PDFs, pilot inquiries, AI activity
-  generation, and batch diagnostics.
-- **In-memory state**: JWT denylist (logout), single-use activation tokens, and quiz draft
-  answers live in process memory. They reset on restart and do not work across multiple
-  instances; production needs Redis (or DB tables) and a durable draft store.
+- **Deferred teacher endpoints return 501**: AI activity generation (`ai-generate`), batch
+  diagnostics (`diagnostics/run`), dashboard CSV export (`dashboard/export-csv`), student nudges
+  (`nudge` / `batch-nudge`), and private teacher notes (`private-log`).
+- **In-memory state**: JWT denylist (logout), single-use activation tokens, and `AuthRateLimiter`
+  counters live in process memory. They reset on restart and are not shared across multiple
+  instances; multi-instance production needs Redis (or DB tables). Quiz drafts are persisted in
+  `QUIZ_DRAFT` (last-write-wins per student/quiz).
 - **No refresh tokens**; clients re-authenticate when the JWT expires (default 2h).
 - **Feedback generation is synchronous** on submit (mock engine is fast). A real model needs a
   queue/worker, retry policy, and observability; the `PENDING` + `retry` contract already
   supports that.
-- **No rate limiting** on `login`/`verify-key`; add it at the gateway or with Bucket4j before
-  exposing the API publicly.
 - **No admin role or subscription enforcement**; `SUBSCRIPTION` is modeled but not enforced.
 - **Swagger is dev-only** and springdoc is not exposed in `prod`.
 - **No Docker locally?** `EndToEndPostgresTest` is skipped, so run the migration test in CI where

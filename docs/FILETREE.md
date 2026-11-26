@@ -39,21 +39,23 @@ aralytics/
 │   ├── src/main/java/ph/aralytics/backend/
 │   │   ├── AralyticsApplication.java        # Spring Boot entry point
 │   │   ├── ai/                             # DiagnosticEngine.java (seam), MockDiagnosticEngine.java (default), LlmDiagnosticEngine.java (ai-profile stub)
-│   │   ├── config/                         # AralyticsProperties, SecurityConfig, CorsConfig, JacksonConfig, OpenApiConfig
-│   │   ├── domain/                         # JPA entities for the ERD + Role/QuizStatus/SubscriptionStatus/QuestionOption
-│   │   ├── exception/                      # ApiException + BadRequest/Conflict/Forbidden/InvalidCredentials/NotFound/NotImplemented, GlobalExceptionHandler
-│   │   ├── repository/                     # Spring Data repositories for users, classes, quizzes, submissions, feedback, progress, notifications
-│   │   ├── security/                       # JwtService, JwtFilter, JwtDenylist, CustomUserDetailsService, AuthenticatedPrincipal, UserPrincipal
-│   │   ├── service/                        # AuthService, QuizService, QuizDraftStore, SubmissionService, SubmissionPersistenceService, DiagnosticService, FeedbackService, DashboardService, RosterService, ActivationTokenStore, DtoMapper
-│   │   └── web/                            # AuthController, PublicController, student/*, teacher/*, and DTO records (Auth/Student/Teacher/Common)
+│   │   ├── config/                         # AralyticsProperties, SecurityConfig, CorsConfig, JacksonConfig, OpenApiConfig, ProductionConfigGuard
+│   │   ├── domain/                         # JPA entities (19 tables: ERD + QuizDraft, TeacherSettings, PasswordResetToken, PilotInquiry) + enums/converters
+│   │   ├── exception/                      # ApiException + BadRequest/Conflict/Forbidden/InvalidCredentials/NotFound/NotImplemented/TooManyRequests, GlobalExceptionHandler
+│   │   ├── repository/                     # Spring Data repositories for users, classes, quizzes, drafts, submissions, feedback, progress, notifications, settings, reset tokens, pilot inquiries
+│   │   ├── security/                       # JwtService, JwtFilter, JwtDenylist, AuthRateLimiter, CustomUserDetailsService, AuthenticatedPrincipal, UserPrincipal
+│   │   ├── service/                        # AuthService, PasswordResetService, QuizService, QuizDraftStore, SubmissionService, SubmissionPersistenceService, DiagnosticService, FeedbackService, DashboardService, RosterService, ReportService, TeacherSettingsService, NotificationService, ActivationTokenStore, DtoMapper
+│   │   └── web/                            # AuthController, PublicController, NotificationController, student/*, teacher/* (activities, dashboard, reports, settings, students), and DTO records
 │   └── src/test/
 │       ├── java/ph/aralytics/backend/
 │       │   ├── ai/MockDiagnosticEngineTest.java      # Feedback length, concepts, fallback, no answer leakage
-│       │   ├── it/                                   # AuthFlowIT, QuizLifecycleIT, AuthorizationIT, SubmitIdempotencyIT, EndToEndPostgresTest
+│       │   ├── service/ReportServiceTest.java        # CSV and PDF report export generation
+│       │   ├── it/                                   # AuthFlowIT, PilotInquiryIT, QuizLifecycleIT, AuthorizationIT, SubmitIdempotencyIT, EndToEndPostgresTest
 │       │   └── support/AbstractApiIT.java            # Shared MockMvc, activation, login, and authoring helpers
 │       └── resources/
 │           ├── application-test.yml                  # H2 PostgreSQL-mode datasource, Hibernate create-drop, Flyway off
 │           └── data.sql                              # H2-compatible seed (app_user, plain JSON options, identity restarts)
+├── postman/                                # Postman collection (Auth, Student, Teacher endpoints) and workspace globals
 ├── fetch-screens.mjs                       # Script to fetch Stitch HTML + screenshots into screens/stitch/ (gitignored)
 │
 ├── screens/                                # RAW STITCH EXPORTS (gitignored via /screens/; reference only — never imported at runtime)
@@ -115,14 +117,18 @@ aralytics/
         ├── App.jsx                         # Route table + conditional AppShell wrapper (Teacher View routes in AppShell; Public & Student View standalone)
         ├── index.css                       # Tailwind v4 @import + @theme token block (colors, fonts, radii, spacing) + .material-symbols-outlined + .custom-scrollbar
         │
+        ├── api/                            # REST client (client.js) and data-fetching hook (useApiResource.js)
         ├── assets/                         # Bundled static assets (if needed by components)
         │
         ├── components/
-        │   ├── BrandLogo.jsx              # Canonical Aralytics header lockup used across public/auth/student/teacher chrome (primary rounded-square school mark + amber dot + landing name styling); never used in footers
-        │   └── layout/                     # Shared Teacher application chrome
-        │       ├── AppShell.jsx            # Fixed left Sidebar + sticky TopBar + <main class="lg:ml-[240px] flex-1 p-6 lg:p-space-xl max-w-[1600px]"> + mobile drawer
-        │       ├── Sidebar.jsx             # 250px fixed left nav (Dashboard, Students, Activities, Reports, Settings under /teacher/*) + Mr. Reyes profile footer
-        │       └── TopBar.jsx              # 72px sticky glass header with mobile hamburger, CS 101 course selector, xl+ search, notifications, New Activity CTA, profile
+        │   ├── BrandLogo.jsx               # Canonical Aralytics header lockup used across public/auth/student/teacher chrome (primary rounded-square school mark + amber dot + landing name styling); never used in footers
+        │   ├── DataState.jsx               # Shared DataError (RFC 7807 / 401 / 403 / 501), LoadingBlock, EmptyBlock UI
+        │   ├── NotificationBell.jsx        # In-app notification bell dropdown wired to /api/*/notifications
+        │   ├── student/
+        │   │   └── StudentHeader.jsx       # Shared Student portal top navigation bar + mobile drawer
+        │   └── layout/                     # Shared Teacher application chrome (composed by AppShell in App.jsx)
+        │       ├── Sidebar.jsx             # 250px fixed left nav (Dashboard, Students, Activities, Reports, Settings under /teacher/*) + profile footer
+        │       └── TopBar.jsx              # 72px sticky glass header with mobile hamburger, course selector, xl+ search, notifications, New Activity CTA, profile
         │
         └── screens/                        # Screen-level route components separated by role (1:1 conversions of screens/stitch/*/code.html)
             ├── public/                     # Public & Authentication screens (standalone chrome)

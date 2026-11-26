@@ -71,11 +71,11 @@ with an adapter stub that falls back to it. See [backend/README.md](./backend/RE
 | [docs/SETUP.md](./docs/SETUP.md) | Quick-start, available commands, and demo credentials |
 | [backend/README.md](./backend/README.md) | Backend setup, `ENV=development\|production` configuration, API map, design decisions, and tests |
 | [docs/PRD.md](./docs/PRD.md) | Product requirements and implementation status |
-| [docs/architecture.md](./docs/architecture.md) | Architecture notes (planned backend and AI service) |
+| [docs/architecture.md](./docs/architecture.md) | Full-stack system architecture (React SPA, Spring Boot API, PostgreSQL 16, DiagnosticEngine) |
 | [docs/requirements.md](./docs/requirements.md) | Functional / non-functional requirements breakdown |
 | [docs/team-roles.md](./docs/team-roles.md) | Team roles and responsibilities |
 | [CONTRIBUTING.md](./CONTRIBUTING.md) | Contribution guidelines and branch conventions |
-| [docs/NAVIGATION.md](./docs/NAVIGATION.md) | Screen routes, navigation graph, and planned `/api/*` endpoint map |
+| [docs/NAVIGATION.md](./docs/NAVIGATION.md) | Screen routes, navigation graph, and `/api/*` endpoint map (implemented vs 501) |
 | [docs/HANDOFF.md](./docs/HANDOFF.md) | Architecture, design tokens, backend/frontend commands, and Stitch-to-React rules |
 | [docs/FILETREE.md](./docs/FILETREE.md) | Complete directory and file purpose map |
 | [docs/LOG.md](./docs/LOG.md) | Chronological append-only log of project changes |

@@ -55,6 +55,12 @@ When testing the institutional onboarding flow on `/register`, the backend must 
 | **Student Activation** | `STJUDE-MNL-2025` | `KEY-8821-PY` | 8+ chars, ≥1 number, matching confirm (e.g. `Student123!`) | `/student/dashboard` |
 | **Teacher / School Setup** | `STJUDE-MNL-2025` | `FAC-2025-DEPED` | 8+ chars, ≥1 number, matching confirm (e.g. `Teacher123!`) | `/teacher/dashboard` |
 
+### Testing the 403 Forbidden Page (`/forbidden`)
+
+- **Role-mismatch redirect (full UI with Access Details card):** Sign in as a `STUDENT` and visit any teacher route (e.g. `/teacher/dashboard`), or sign in as a `TEACHER` and visit any student route (e.g. `/student/dashboard`). `RequireAuth` redirects to `/forbidden` with route/role state showing `Requested Route`, `Your Role`, `Required Role`, and the **Go to My Dashboard**, **Go Back**, and **Switch Account** actions.
+- **Direct visit (generic layout check):** Open `http://localhost:3000/forbidden` directly while signed out (shows **Sign In** / **Back to Home**) or signed in (shows **Go to My Dashboard** / **Switch Account**) without the Access Details card.
+- **API 403 vs. Page 403:** Backend `403` responses render the inline `DataError` ("Access denied") banner rather than redirecting to `/forbidden`.
+
 ---
 
 ## 4. Available Commands
@@ -75,19 +81,31 @@ Run inside `frontend/` (or from root with `npm --prefix frontend run <script>`):
 
 ```text
 aralytics/
-├── SETUP.md          # Setup, commands, and default Student/Teacher credentials (this file)
-├── NAVIGATION.md     # Frontend screen routes, navigation links, and backend /api/* endpoint map
-├── PRD.md            # Product requirements and current prototype/production scope distinction
-├── HANDOFF.md        # Architecture, design tokens, and Stitch -> React conversion rules
-├── FILETREE.md       # Complete directory & file purpose map
-├── LOG.md            # Chronological log of project changes
-├── screens/          # Raw Stitch HTML + PNG reference exports (gitignored)
-└── frontend/         # React 19 + Vite 8 + Tailwind CSS v4 SPA
-    ├── public/       # Static public assets
+├── .env.example          # Unified root env template (ENV=development|production)
+├── docker-compose.yml    # PostgreSQL 16 + Spring Boot backend (:8080)
+├── run-app.bat           # One-click Windows launcher (backend :8080 + frontend :3000)
+├── README.md             # Project overview and quick start
+├── docs/
+│   ├── SETUP.md          # Setup, commands, and default Student/Teacher credentials (this file)
+│   ├── NAVIGATION.md     # Frontend screen routes, navigation links, and backend /api/* endpoint map
+│   ├── PRD.md            # Product requirements and MVP/post-MVP scope
+│   ├── HANDOFF.md        # Architecture, design tokens, and Stitch -> React conversion rules
+│   ├── FILETREE.md       # Complete directory & file purpose map
+│   ├── LOG.md            # Chronological log of project changes
+│   ├── architecture.md   # Full-stack system architecture overview
+│   ├── requirements.md   # Requirements index and MVP scope summary
+│   └── team-roles.md     # Team roster and role descriptions
+├── backend/              # Spring Boot 3.4.13 / Java 21 REST API + Flyway PostgreSQL 16 migrations
+├── postman/              # Postman collection and workspace globals for API testing
+├── screens/              # Raw Stitch HTML + PNG reference exports (gitignored)
+└── frontend/             # React 19 + Vite 8 + Tailwind CSS v4 SPA
+    ├── public/           # Static public assets
     └── src/
-        ├── components/layout/   # Teacher View AppShell (Sidebar + TopBar)
+        ├── api/          # REST client (client.js) and data-fetching hook (useApiResource.js)
+        ├── components/   # BrandLogo, DataState, NotificationBell, student/, layout/ (Sidebar, TopBar)
         └── screens/
-            ├── public/          # /, /login, /register
-            ├── student/         # /student/dashboard, /student/activities, /student/quiz, /student/feedback, /student/progress
-            └── teacher/         # /teacher/dashboard, /teacher/students, /teacher/activities, /teacher/reports, /teacher/settings
+            ├── public/   # /, /login, /register, /forgot-password, /reset-password
+            ├── shared/   # /profile
+            ├── student/  # /student/dashboard, /student/activities, /student/quiz, /student/feedback, /student/progress
+            └── teacher/  # /teacher/dashboard, /teacher/students, /teacher/activities, /teacher/reports, /teacher/settings
 ```

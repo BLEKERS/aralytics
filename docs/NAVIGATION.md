@@ -1,6 +1,6 @@
 # NAVIGATION.md — Screen Navigation & Backend API Route Map
 
-> Complete reference mapping all **13 Aralytics screens**, their frontend URL routes, outgoing UI navigation links, and planned backend REST API endpoints (`/api/public/*`, `/api/auth/*`, `/api/student/*`, `/api/teacher/*`).
+> Complete reference mapping Aralytics screens, their frontend URL routes, outgoing UI navigation links, and backend REST API endpoints (`/api/public/*`, `/api/auth/*`, `/api/student/*`, `/api/teacher/*`). Endpoints marked `(501)` are intentionally deferred post-MVP; see [`../backend/README.md`](../backend/README.md) for the authoritative API contract.
 
 ---
 
@@ -58,25 +58,28 @@ flowchart TD
 
 ## 2. Frontend Routes ↔ Backend API Endpoints Matrix
 
-### 2.1 Public & Authentication Routes
+### 2.1 Public, Authentication & Shared Routes
 
-| Frontend Route | Screen Component | Stitch Source | Planned Backend API Endpoints | Purpose |
+| Frontend Route | Screen Component | Stitch Source | Backend API Endpoints | Purpose |
 |---|---|---|---|---|
-| `/` | `frontend/src/screens/public/LandingPage.jsx` | `screens/stitch/landing_page/code.html` | `POST /api/public/pilot-inquiry` | Submit school/classroom pilot inquiry form |
-| `/login` | `frontend/src/screens/public/LoginScreen.jsx` | `screens/stitch/aralytics_login/code.html` | `POST /api/auth/login`<br>`POST /api/auth/logout`<br>`GET /api/auth/me` | Authenticate Student or Teacher credentials and return session/JWT + role |
-| `/register` | `frontend/src/screens/public/AccountActivationScreen.jsx` | `screens/stitch/aralytics_account_registration_activation/code.html` | `POST /api/auth/verify-key`<br>`POST /api/auth/activate` | Validate school code (`STJUDE-MNL-2025`) + access key (`KEY-8821-PY` / `FAC-2025-DEPED`) and set password |
+| `/` | `frontend/src/screens/public/LandingPage.jsx` | `screens/stitch/landing_page/code.html` | `POST /api/public/pilot-inquiry` | Submit and persist school/classroom pilot inquiry |
+| `/login` | `frontend/src/screens/public/LoginScreen.jsx` | `screens/stitch/aralytics_login/code.html` | `POST /api/auth/login`<br>`POST /api/auth/logout`<br>`GET /api/auth/me` | Authenticate Student or Teacher credentials and return stateless JWT + role |
+| `/register` | `frontend/src/screens/public/AccountActivationScreen.jsx` | `screens/stitch/aralytics_account_registration_activation/code.html` | `POST /api/auth/verify-key`<br>`POST /api/auth/activate` | Validate school code + access key and activate account |
+| `/forgot-password` | `frontend/src/screens/public/ForgotPasswordScreen.jsx` | — | `POST /api/auth/forgot-password` | Request a short-lived password-reset token/email |
+| `/reset-password` | `frontend/src/screens/public/ResetPasswordScreen.jsx` | — | `POST /api/auth/reset-password` | Consume reset token and set a new password |
+| `/profile` | `frontend/src/screens/shared/ProfileScreen.jsx` | — | `GET /api/auth/profile`<br>`PUT /api/auth/profile`<br>`PUT /api/auth/profile/password` | View/update user profile details and change password |
 
 ---
 
 ### 2.2 Student View Routes (`/student/*` ↔ `/api/student/*`)
 
-| Frontend Route | Screen Component | Stitch Source | Planned Backend API Endpoints | Purpose |
+| Frontend Route | Screen Component | Stitch Source | Backend API Endpoints | Purpose |
 |---|---|---|---|---|
-| `/student/dashboard` | `frontend/src/screens/student/StudentDashboard.jsx` | `screens/stitch/portal/code.html` | `GET /api/student/dashboard`<br>`PATCH /api/student/preferences` | Fetch student greeting, streak/XP stats, active quiz card, learning path, AI coaching tips, and badges |
-| `/student/activities` | `frontend/src/screens/student/StudentMyActivities.jsx` | `screens/stitch/aralytics_student_my_activities/code.html` | `GET /api/student/activities?category=all\|assigned\|remedial\|completed`<br>`POST /api/student/office-hours/book` | List assigned, remedial, and completed coding activities; book 15-min teacher consultation slot |
-| `/student/quiz` | `frontend/src/screens/student/StudentLiveQuiz.jsx` | `screens/stitch/aralytics_student_live_quiz_code_scenario/code.html` | `GET /api/student/quiz/:quizId`<br>`PATCH /api/student/quiz/:quizId/answer`<br>`POST /api/student/quiz/:quizId/flag`<br>`POST /api/student/quiz/:quizId/submit` | Load 10-question code debugging scenario, save selected option A–D, flag questions, and submit quiz for AI evaluation |
-| `/student/feedback` | `frontend/src/screens/student/StudentDiagnosticReport.jsx` | `screens/stitch/aralytics_instant_ai_feedback_diagnostic_report/code.html` | `GET /api/student/feedback/:submissionId`<br>`POST /api/student/feedback/:submissionId/practice-drill`<br>`GET /api/student/feedback/:submissionId/pdf` | Fetch 80% evaluation score, root-cause analysis, question review breakdown, submit 3-item remedial drill (`+15 XP`), download PDF |
-| `/student/progress` | `frontend/src/screens/student/StudentProgressHistory.jsx` | `screens/stitch/aralytics_student_feedback_history_progress/code.html` | `GET /api/student/progress`<br>`GET /api/student/progress/history?filter=all\|needs-practice\|mastered&q=...`<br>`GET /api/student/progress/report/:reportId`<br>`POST /api/student/progress/notes` | Fetch mastery trajectory, competency bars, searchable AI feedback history, modal diagnostic report, and student pinned notes |
+| `/student/dashboard` | `frontend/src/screens/student/StudentDashboard.jsx` | `screens/stitch/portal/code.html` | `GET /api/student/dashboard`<br>`GET /api/student/notifications` | Fetch student counts, streak, recent scores, concept mastery, and notifications |
+| `/student/activities` | `frontend/src/screens/student/StudentMyActivities.jsx` | `screens/stitch/aralytics_student_my_activities/code.html` | `GET /api/student/activities?category=all\|assigned\|remedial\|completed` | List published, remedial, and completed coding activities |
+| `/student/quiz` | `frontend/src/screens/student/StudentLiveQuiz.jsx` | `screens/stitch/aralytics_student_live_quiz_code_scenario/code.html` | `GET /api/student/quiz/{quizId}`<br>`PATCH /api/student/quiz/{quizId}/answer`<br>`POST /api/student/quiz/{quizId}/submit` | Load published quiz (no `correctAnswer`), save durable drafts (`QUIZ_DRAFT`), and submit for scoring + diagnostic feedback |
+| `/student/feedback` | `frontend/src/screens/student/StudentDiagnosticReport.jsx` | `screens/stitch/aralytics_instant_ai_feedback_diagnostic_report/code.html` | `GET /api/student/feedback/{submissionId}`<br>`POST /api/student/feedback/{submissionId}/retry`<br>`POST /api/student/feedback/{submissionId}/practice-drill` | Read owner-only diagnostic feedback (`200` READY / `202` PENDING), retry generation, or generate a 3-question practice drill |
+| `/student/progress` | `frontend/src/screens/student/StudentProgressHistory.jsx` | `screens/stitch/aralytics_student_feedback_history_progress/code.html` | `GET /api/student/progress`<br>`GET /api/student/progress/history?search=...` | Fetch concept mastery and searchable past submission/feedback history |
 
 ---
 
@@ -84,13 +87,13 @@ flowchart TD
 
 All Teacher View screens are wrapped in `AppShell` (`Sidebar.jsx` + `TopBar.jsx`).
 
-| Frontend Route | Screen Component | Stitch Source | Planned Backend API Endpoints | Purpose |
+| Frontend Route | Screen Component | Stitch Source | Backend API Endpoints | Purpose |
 |---|---|---|---|---|
-| `/teacher/dashboard` | `frontend/src/screens/teacher/TeacherDashboard.jsx` | `screens/stitch/aralytics_teacher_desktop_dashboard/code.html` | `GET /api/teacher/dashboard?section=10-Rizal&concept=All`<br>`POST /api/teacher/diagnostics/run`<br>`GET /api/teacher/students/:studentId/diagnostic`<br>`POST /api/teacher/students/:studentId/nudge`<br>`GET /api/teacher/dashboard/export-csv` | Fetch cohort KPIs, mastery trajectory chart/table, flagged students, student drilldown modal (EN/FIL), and student directory |
-| `/teacher/students` | `frontend/src/screens/teacher/StudentsMasteryRoster.jsx` | `screens/stitch/aralytics_students_mastery_roster/code.html` | `GET /api/teacher/students?search=...&topic=...&status=...&page=1`<br>`GET /api/teacher/students/:studentId`<br>`PUT /api/teacher/students/:studentId/private-log`<br>`POST /api/teacher/students/batch-nudge` | Paginated student mastery roster, right-hand student deep-dive drawer, private teacher notes log, and batch nudge |
-| `/teacher/activities` | `frontend/src/screens/teacher/ActivitiesQuizManagement.jsx` | `screens/stitch/aralytics_activities_quiz_management/code.html` | `GET /api/teacher/activities?status=...&topic=...`<br>`POST /api/teacher/activities`<br>`PATCH /api/teacher/activities/:activityId`<br>`POST /api/teacher/activities/ai-generate` | List coding activities & quizzes, filter by status/topic, create new activity via slide-over drawer, push remedial drills |
-| `/teacher/reports` | `frontend/src/screens/teacher/ClassReportsLearningAnalytics.jsx` | `screens/stitch/reports/code.html` | `GET /api/teacher/reports?term=...&section=...`<br>`GET /api/teacher/reports/export-csv`<br>`GET /api/teacher/reports/export-pdf` | Cohort mastery distribution, DepEd MELCs competency matrix, misconception clusters, AI telemetry, and CSV/PDF exports |
-| `/teacher/settings` | `frontend/src/screens/teacher/TeacherClassroomSettings.jsx` | `screens/stitch/teacher_settings/code.html` | `GET /api/teacher/settings`<br>`PUT /api/teacher/settings` | Read and update AI diagnostic tone (`Taglish`, `Formal English`, `Conversational Filipino`), remedial threshold slider, profile, and grading weights |
+| `/teacher/dashboard` | `frontend/src/screens/teacher/TeacherDashboard.jsx` | `screens/stitch/aralytics_teacher_desktop_dashboard/code.html` | `GET /api/teacher/dashboard?section=&concept=`<br>`GET /api/teacher/notifications`<br>`GET /api/teacher/students/{studentId}/diagnostic`<br>`POST /api/teacher/diagnostics/run` *(501)*<br>`POST /api/teacher/students/{studentId}/nudge` *(501)*<br>`GET /api/teacher/dashboard/export-csv` *(501)* | Fetch cohort KPIs, mastery overview, flagged students, student drilldown, and notifications |
+| `/teacher/students` | `frontend/src/screens/teacher/StudentsMasteryRoster.jsx` | `screens/stitch/aralytics_students_mastery_roster/code.html` | `GET /api/teacher/students?search=&topic=&status=&page=1&size=20`<br>`GET /api/teacher/students/{studentId}`<br>`PUT /api/teacher/students/{studentId}/private-log` *(501)*<br>`POST /api/teacher/students/batch-nudge` *(501)* | Paginated student mastery roster and student deep-dive drawer |
+| `/teacher/activities` | `frontend/src/screens/teacher/ActivitiesQuizManagement.jsx` | `screens/stitch/aralytics_activities_quiz_management/code.html` | `GET /api/teacher/activities?status=&topic=`<br>`POST /api/teacher/activities`<br>`PATCH /api/teacher/activities/{activityId}`<br>`POST /api/teacher/activities/{activityId}/publish`<br>`POST /api/teacher/activities/ai-generate` *(501)* | List, create, edit DRAFT activities, and publish to enrolled students |
+| `/teacher/reports` | `frontend/src/screens/teacher/ClassReportsLearningAnalytics.jsx` | `screens/stitch/reports/code.html` | `GET /api/teacher/reports/export-csv?topic=`<br>`GET /api/teacher/reports/export-pdf?section=&topic=` | Download roster CSV and cohort analytics PDF exports |
+| `/teacher/settings` | `frontend/src/screens/teacher/TeacherClassroomSettings.jsx` | `screens/stitch/teacher_settings/code.html` | `GET /api/teacher/settings`<br>`PUT /api/teacher/settings` | Read and persist intervention threshold and feedback tone settings |
 
 ---
 
