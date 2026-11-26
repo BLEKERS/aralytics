@@ -89,23 +89,27 @@ export function DataError({ error, onRetry, className = '' }) {
     >
       <div className="flex items-start gap-space-sm min-w-0">
         <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${tone.icon}`}>
-          <span className="material-symbols-outlined text-[20px]">{info.icon}</span>
+          <span aria-hidden="true" className="material-symbols-outlined text-[20px]">
+            {info.icon}
+          </span>
         </div>
         <div className="min-w-0">
           <p className={`font-label-lg text-label-lg font-bold ${tone.title}`}>{info.title}</p>
           <p className="font-body-sm text-body-sm text-on-surface-variant">{info.message}</p>
           {info.detail && info.detail !== info.message && (
-            <p className="font-body-sm text-body-sm text-outline mt-0.5 break-words">{info.detail}</p>
+            <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5 break-words">{info.detail}</p>
           )}
         </div>
       </div>
       {onRetry && (
         <button
-          className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-surface-container-lowest text-on-surface font-label-md text-label-md font-semibold hover:bg-surface-container transition-colors shrink-0 shadow-sm"
+          className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-surface-container-lowest text-on-surface font-label-md text-label-md font-semibold hover:bg-surface-container transition-colors shrink-0 shadow-sm cursor-pointer"
           onClick={onRetry}
           type="button"
         >
-          <span className="material-symbols-outlined text-[18px]">refresh</span>
+          <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
+            refresh
+          </span>
           Retry
         </button>
       )}
@@ -116,8 +120,14 @@ export function DataError({ error, onRetry, className = '' }) {
 /** Compact loading state that can be dropped into a card or page section. */
 export function LoadingBlock({ label = 'Loading from Aralytics…', className = '' }) {
   return (
-    <div className={`flex items-center gap-3 px-space-md py-space-sm rounded-2xl bg-surface-container-low text-on-surface-variant ${className}`}>
-      <span className="material-symbols-outlined text-[20px] animate-spin text-primary">progress_activity</span>
+    <div
+      aria-live="polite"
+      className={`flex items-center gap-3 px-space-md py-space-sm rounded-2xl bg-surface-container-low text-on-surface-variant ${className}`}
+      role="status"
+    >
+      <span aria-hidden="true" className="material-symbols-outlined text-[20px] animate-spin text-primary">
+        progress_activity
+      </span>
       <span className="font-body-sm text-body-sm font-medium">{label}</span>
     </div>
   )
@@ -127,7 +137,9 @@ export function LoadingBlock({ label = 'Loading from Aralytics…', className = 
 export function EmptyBlock({ icon = 'inbox', title = 'Nothing here yet', message, className = '' }) {
   return (
     <div className={`rounded-2xl bg-surface-container-low p-space-lg text-center flex flex-col items-center gap-2 ${className}`}>
-      <span className="material-symbols-outlined text-[28px] text-on-surface-variant">{icon}</span>
+      <span aria-hidden="true" className="material-symbols-outlined text-[28px] text-on-surface-variant">
+        {icon}
+      </span>
       <p className="font-label-lg text-label-lg font-bold text-on-surface">{title}</p>
       {message && <p className="font-body-sm text-body-sm text-on-surface-variant max-w-md">{message}</p>}
     </div>

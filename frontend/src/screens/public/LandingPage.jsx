@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import BrandLogo from '../../components/BrandLogo';
 import { api } from '../../api/client';
@@ -13,6 +13,15 @@ export default function LandingPage() {
   const [pilotState, setPilotState] = useState('idle');
   const [pilotError, setPilotError] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!demoOpen) return;
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setDemoOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [demoOpen]);
 
   const handlePilotSubmit = async (event) => {
     event.preventDefault();
@@ -36,15 +45,15 @@ export default function LandingPage() {
           <div className="flex items-center gap-space-lg">
             <BrandLogo to="/" />
             <nav className="hidden lg:flex items-center gap-1" data-active-classes="bg-surface-container-high text-primary font-label-lg rounded-xl">
-              <a className="px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-label-lg text-label-lg" data-path="features" href="#">Features</a>
-              <a className="px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-label-lg text-label-lg" data-path="for-students" href="#">For Students</a>
-              <a className="px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-label-lg text-label-lg" data-path="for-teachers" href="#">For Teachers</a>
-              <a className="px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-label-lg text-label-lg" data-path="curriculum" href="#">Curriculum &amp; Topics</a>
-              <a className="px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-label-lg text-label-lg" data-path="pricing-pilot" href="#pilot-signup">Pricing&nbsp;&nbsp;</a>
+              <a className="px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-label-lg text-label-lg" data-path="features" href="#features">Features</a>
+              <a className="px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-label-lg text-label-lg" data-path="for-students" href="#ecosystem" onClick={() => setProductTab('students')}>For Students</a>
+              <a className="px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-label-lg text-label-lg" data-path="for-teachers" href="#ecosystem" onClick={() => setProductTab('teachers')}>For Teachers</a>
+              <a className="px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-label-lg text-label-lg" data-path="curriculum" href="#curriculum">Curriculum &amp; Topics</a>
+              <a className="px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-label-lg text-label-lg" data-path="pricing-pilot" href="#pilot-signup">Pricing</a>
             </nav>
             <button
               aria-expanded={menuOpen}
-              aria-label="Open navigation menu"
+              aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
               className="lg:hidden w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors shrink-0"
               onClick={() => setMenuOpen(!menuOpen)}
               title="Menu"
@@ -56,12 +65,8 @@ export default function LandingPage() {
             </button>
           </div>
           <div className="flex items-center gap-space-sm lg:gap-space-md">
-            <div className="flex items-center bg-surface-container-low p-1 rounded-full text-on-surface-variant font-label-sm text-label-sm"></div>
             <Link className="hidden sm:inline-flex px-3.5 py-2 rounded-xl text-on-surface font-label-lg text-label-lg hover:bg-surface-container transition-colors" data-path="login" to="/login">Log In</Link>
             <a className="hidden sm:inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-primary text-on-primary font-label-lg text-label-lg shadow-[0_4px_16px_rgba(91,75,219,0.18)] hover:bg-primary-container hover:text-on-primary-container transition-all focus:outline-none focus:ring-4 focus:ring-primary-fixed" data-path="pricing-pilot" href="#pilot-signup">Start Free Classroom Pilot</a>
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
-              <span className="material-symbols-outlined text-on-primary text-[18px]">person</span>
-            </div>
           </div>
         </div>
         {/* Mobile nav dropdown */}
@@ -84,18 +89,21 @@ export default function LandingPage() {
               Log In
             </Link>
             {[
-              { label: 'Features', path: 'features', href: '#' },
-              { label: 'For Students', path: 'for-students', href: '#' },
-              { label: 'For Teachers', path: 'for-teachers', href: '#' },
-              { label: 'Curriculum & Topics', path: 'curriculum', href: '#' },
-              { label: 'Pricing  ', path: 'pricing-pilot', href: '#pilot-signup' },
+              { label: 'Features', path: 'features', href: '#features' },
+              { label: 'For Students', path: 'for-students', href: '#ecosystem', tab: 'students' },
+              { label: 'For Teachers', path: 'for-teachers', href: '#ecosystem', tab: 'teachers' },
+              { label: 'Curriculum & Topics', path: 'curriculum', href: '#curriculum' },
+              { label: 'Pricing', path: 'pricing-pilot', href: '#pilot-signup' },
             ].map((item) => (
               <a
                 className="flex items-center px-3 py-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-label-lg text-label-lg"
                 data-path={item.path}
                 href={item.href}
                 key={item.path}
-                onClick={() => setMenuOpen(false)}
+                onClick={() => {
+                  if (item.tab) setProductTab(item.tab);
+                  setMenuOpen(false);
+                }}
               >
                 {item.label}
               </a>
@@ -115,8 +123,8 @@ export default function LandingPage() {
                   AI Coding Diagnostics · Instant Personalized Feedback
                 </span>
               </div>
-              <h1 className="font-display-lg text-display-lg-mobile lg:text-display-lg text-on-surface text-center max-w-4xl tracking-tight leading-tight mb-6">
-                Personalized AI Tutoring &amp; Instant Diagnostic Feedback for <span className="text-primary relative inline-block">Every Student Coder.</span>
+              <h1 className="font-display-lg text-display-lg-mobile lg:text-display-lg text-on-surface text-center max-w-4xl tracking-tight leading-tight mb-6 text-balance">
+                Personalized AI Tutoring &amp; Instant Diagnostic Feedback for <span className="text-primary">Every Student Coder.</span>
               </h1>
               <p className="font-body-lg text-body-lg text-on-surface-variant text-center max-w-2xl mb-10 leading-relaxed">
                 Aralytics empowers Computer Science teachers to spot programming misconceptions in seconds and guides student coders with instant, empathetic step-by-step AI feedback on Python, loops, and logic errors.
@@ -181,7 +189,9 @@ export default function LandingPage() {
                         </div>
                         <div className="w-full p-3.5 rounded-xl bg-surface-container-lowest border-2 border-primary flex items-center justify-between shadow-xs">
                           <div className="flex items-center gap-2.5">
-                            <span className="w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center text-xs font-bold">✓</span>
+                            <span className="w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0">
+                              <span className="material-symbols-outlined text-[14px]">check</span>
+                            </span>
                             <span className="font-body-md text-body-md font-semibold text-primary">B) Prints all 4 grades then throws IndexError</span>
                           </div>
                           <span className="px-2 py-0.5 rounded bg-primary-fixed text-primary font-label-sm text-label-sm font-semibold">Submitted</span>
@@ -209,7 +219,10 @@ export default function LandingPage() {
                             <span className="font-label-sm text-label-sm text-on-surface-variant">Real-time code diagnostic feedback</span>
                           </div>
                         </div>
-                        <span className="px-2.5 py-1 rounded-full bg-tertiary-fixed/40 text-on-tertiary-fixed-variant font-label-sm text-label-sm font-semibold">🔥 5-Day Coding Streak</span>
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-tertiary-fixed/40 text-on-tertiary-fixed-variant font-label-sm text-label-sm font-semibold">
+                          <span className="material-symbols-outlined text-[15px] text-tertiary">local_fire_department</span>
+                          <span>5-Day Coding Streak</span>
+                        </span>
                       </div>
                       <div className="p-4 rounded-xl bg-surface-container-low/50 mb-5">
                         <p className="font-body-md text-body-md text-on-surface leading-relaxed">
@@ -240,13 +253,10 @@ export default function LandingPage() {
             </div>
           </section>
           {/* KEY VALUE PILLARS (3-Column Grid) */}
-          <section className="w-full py-24 bg-surface-container-low/30">
+          <section className="w-full py-24 bg-surface-container-low/30 scroll-mt-20" id="features">
             <div className="max-w-[1120px] mx-auto px-margin-mobile lg:px-margin">
               <div className="text-center max-w-2xl mx-auto mb-16">
-                <span className="text-primary font-label-sm text-label-sm font-bold uppercase tracking-wider">
-                  Why Aralytics for Coding
-                </span>
-                <h2 className="font-headline-lg text-headline-lg text-on-surface mt-3">
+                <h2 className="font-headline-lg text-headline-lg text-on-surface text-balance">
                   Built to fix coding roadblocks before students give up.
                 </h2>
                 <p className="font-body-md text-body-md text-on-surface-variant mt-3 leading-relaxed">
@@ -309,30 +319,27 @@ export default function LandingPage() {
             </div>
           </section>
           {/* DUAL-TAB PRODUCT PREVIEW ('For Students' vs 'For Teachers') */}
-          <section className="w-full py-24 lg:py-32">
+          <section className="w-full py-24 lg:py-32 scroll-mt-20" id="ecosystem">
             <div className="max-w-[1120px] mx-auto px-margin-mobile lg:px-margin">
               <div className="flex flex-col items-center text-center mb-14">
-                <span className="text-primary font-label-sm text-label-sm font-bold uppercase tracking-wider">
-                  Two Perspectives · One Seamless Loop
-                </span>
-                <h2 className="font-headline-lg text-headline-lg text-on-surface mt-3">
+                <h2 className="font-headline-lg text-headline-lg text-on-surface text-balance">
                   Explore the Aralytics Ecosystem
                 </h2>
                 <p className="font-body-md text-body-md text-on-surface-variant max-w-xl mt-3 leading-relaxed">
                   Toggle between the gamified, low-pressure learner feed and the command center built for DepEd Master Teachers.
                 </p>
-                <div className="mt-8 inline-flex p-1 rounded-full bg-surface-container-high/50 border border-surface-container-high/60">
-                  <button className={`px-6 py-2 rounded-full ${productTab === 'students' ? 'bg-surface-container-lowest text-primary shadow-xs' : 'text-on-surface-variant hover:text-on-surface'} font-label-lg text-label-lg font-semibold transition-all flex items-center gap-2`} id="tab-btn-students" onClick={() => setProductTab('students')} type="button">
+                <div aria-label="Product perspective" className="mt-8 inline-flex p-1 rounded-full bg-surface-container-high/50 border border-surface-container-high/60" role="tablist">
+                  <button aria-controls="tab-content-students" aria-selected={productTab === 'students'} className={`px-6 py-2 rounded-full ${productTab === 'students' ? 'bg-surface-container-lowest text-primary shadow-xs' : 'text-on-surface-variant hover:text-on-surface'} font-label-lg text-label-lg font-semibold transition-all flex items-center gap-2`} id="tab-btn-students" onClick={() => setProductTab('students')} role="tab" type="button">
                     <span className="material-symbols-outlined text-[18px]">backpack</span>
                     <span className="">Student Experience</span>
                   </button>
-                  <button className={`px-6 py-2 rounded-full ${productTab === 'teachers' ? 'bg-surface-container-lowest text-primary shadow-xs' : 'text-on-surface-variant hover:text-on-surface'} font-label-lg text-label-lg font-semibold transition-all flex items-center gap-2`} id="tab-btn-teachers" onClick={() => setProductTab('teachers')} type="button">
+                  <button aria-controls="tab-content-teachers" aria-selected={productTab === 'teachers'} className={`px-6 py-2 rounded-full ${productTab === 'teachers' ? 'bg-surface-container-lowest text-primary shadow-xs' : 'text-on-surface-variant hover:text-on-surface'} font-label-lg text-label-lg font-semibold transition-all flex items-center gap-2`} id="tab-btn-teachers" onClick={() => setProductTab('teachers')} role="tab" type="button">
                     <span className="material-symbols-outlined text-[18px]">co_present</span>
                     <span className="">Teacher &amp; Adviser Hub</span>
                   </button>
                 </div>
               </div>
-              <div className={`rounded-2xl bg-surface-container-lowest p-8 lg:p-10 border border-surface-container-high/50 shadow-xs transition-all ${productTab === 'students' ? '' : 'hidden'}`} id="tab-content-students">
+              <div aria-labelledby="tab-btn-students" className={`rounded-2xl bg-surface-container-lowest p-8 lg:p-10 border border-surface-container-high/50 shadow-xs transition-all ${productTab === 'students' ? '' : 'hidden'}`} id="tab-content-students" role="tabpanel">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
                   <div className="lg:col-span-5 space-y-6">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm font-semibold">
@@ -377,7 +384,10 @@ export default function LandingPage() {
                             <span className="font-label-sm text-label-sm text-on-surface-variant">Grade 10 · Python &amp; Algorithms</span>
                           </div>
                         </div>
-                        <span className="font-label-sm text-label-sm text-on-surface-variant font-medium">⚡ 450 XP</span>
+                        <span className="inline-flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant font-medium">
+                          <span className="material-symbols-outlined text-[15px] text-primary">bolt</span>
+                          <span>450 XP</span>
+                        </span>
                       </div>
                       <div className="p-4 rounded-xl bg-surface-container-low/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div>
@@ -407,7 +417,7 @@ export default function LandingPage() {
                   </div>
                 </div>
               </div>
-              <div className={`rounded-2xl bg-surface-container-lowest p-8 lg:p-10 border border-surface-container-high/50 shadow-xs transition-all ${productTab === 'teachers' ? 'block' : 'hidden'}`} id="tab-content-teachers">
+              <div aria-labelledby="tab-btn-teachers" className={`rounded-2xl bg-surface-container-lowest p-8 lg:p-10 border border-surface-container-high/50 shadow-xs transition-all ${productTab === 'teachers' ? 'block' : 'hidden'}`} id="tab-content-teachers" role="tabpanel">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
                   <div className="lg:col-span-5 space-y-6">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm font-semibold">
@@ -466,19 +476,19 @@ export default function LandingPage() {
                               <td className="py-3 font-medium text-on-surface">Miguel Santos</td>
                               <td className="py-3 text-secondary font-semibold">92%</td>
                               <td className="py-3"><span className="px-2 py-0.5 rounded bg-secondary-container/40 text-on-secondary-container font-label-sm text-label-sm font-semibold">Mastered</span></td>
-                              <td className="py-3 text-right"><span className="text-primary hover:underline cursor-pointer font-semibold text-xs">Challenge Drill</span></td>
+                              <td className="py-3 text-right"><span className="text-primary font-semibold text-xs">Challenge Drill</span></td>
                             </tr>
                             <tr>
                               <td className="py-3 font-medium text-on-surface">Patricia Lim</td>
                               <td className="py-3 text-on-surface-variant font-semibold">65%</td>
                               <td className="py-3"><span className="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm font-semibold">Needs Nudge</span></td>
-                              <td className="py-3 text-right"><span className="text-primary hover:underline cursor-pointer font-semibold text-xs">Send Loop Hint</span></td>
+                              <td className="py-3 text-right"><span className="text-primary font-semibold text-xs">Send Loop Hint</span></td>
                             </tr>
                             <tr>
                               <td className="py-3 font-medium text-on-surface">Kevin Bautista</td>
                               <td className="py-3 text-error font-semibold">40%</td>
                               <td className="py-3"><span className="px-2 py-0.5 rounded bg-error-container/60 text-error font-label-sm text-label-sm font-semibold">IndexError Trap</span></td>
-                              <td className="py-3 text-right"><span className="text-error hover:underline cursor-pointer font-semibold text-xs">1-on-1 Debug</span></td>
+                              <td className="py-3 text-right"><span className="text-error font-semibold text-xs">1-on-1 Debug</span></td>
                             </tr>
                           </tbody>
                         </table>
@@ -496,7 +506,7 @@ export default function LandingPage() {
             </div>
           </section>
           {/* DEPED K-12 MATATAG CURRICULUM ALIGNMENT */}
-          <section className="w-full py-24 bg-surface-container-low/20">
+          <section className="w-full py-24 bg-surface-container-low/20 scroll-mt-20" id="curriculum">
             <div className="max-w-[1120px] mx-auto px-margin-mobile lg:px-margin">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
                 <div className="lg:col-span-5 order-2 lg:order-1">
@@ -554,10 +564,7 @@ export default function LandingPage() {
                   </div>
                 </div>
                 <div className="lg:col-span-7 order-1 lg:order-2 space-y-6">
-                  <span className="text-primary font-label-sm text-label-sm font-bold uppercase tracking-wider">
-                    Pedagogy-First AI Architecture
-                  </span>
-                  <h2 className="font-headline-lg text-headline-lg text-on-surface">
+                  <h2 className="font-headline-lg text-headline-lg text-on-surface text-balance">
                     Engineered specifically for computer science educators.
                   </h2>
                   <p className="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
@@ -581,10 +588,7 @@ export default function LandingPage() {
           <section className="w-full py-24 lg:py-32">
             <div className="max-w-[1120px] mx-auto px-margin-mobile lg:px-margin">
               <div className="text-center max-w-2xl mx-auto mb-16">
-                <span className="text-primary font-label-sm text-label-sm font-bold uppercase tracking-wider">
-                  Voices from the Coding Lab
-                </span>
-                <h2 className="font-headline-lg text-headline-lg text-on-surface mt-3">
+                <h2 className="font-headline-lg text-headline-lg text-on-surface text-balance">
                   Loved by computer science teachers and student coders.
                 </h2>
                 <p className="font-body-md text-body-md text-on-surface-variant mt-3 leading-relaxed">
@@ -695,13 +699,13 @@ export default function LandingPage() {
             </div>
           </section>
           {/* FINAL CONVERSION & PILOT SIGNUP CTA SECTION */}
-          <section className="w-full py-24 bg-surface-container-low/30" id="pilot-signup">
+          <section className="w-full py-24 bg-surface-container-low/30 scroll-mt-20" id="pilot-signup">
             <div className="max-w-[1120px] mx-auto px-margin-mobile lg:px-margin">
               <div className="rounded-3xl bg-surface-container-lowest p-10 lg:p-16 border border-surface-container-high/60 shadow-sm text-center max-w-3xl mx-auto space-y-6">
                 <div className="w-12 h-12 rounded-xl bg-primary text-on-primary flex items-center justify-center mx-auto mb-2">
                   <span className="material-symbols-outlined text-[28px]">terminal</span>
                 </div>
-                <h2 className="font-headline-lg text-headline-lg sm:text-[36px] text-on-surface font-bold tracking-tight leading-tight">
+                <h2 className="font-headline-lg text-headline-lg sm:text-[36px] text-on-surface font-bold tracking-tight leading-tight text-balance">
                   Ready to transform coding education in your school?
                 </h2>
                 <p className="font-body-lg text-body-lg text-on-surface-variant leading-relaxed max-w-xl mx-auto">
@@ -712,15 +716,16 @@ export default function LandingPage() {
                     <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-on-surface-variant">
                       <span className="material-symbols-outlined text-[20px]">mail</span>
                     </span>
-                    <input className="w-full pl-10 pr-4 py-3.5 rounded-xl bg-surface-container-low/40 border border-surface-container-high/60 focus:ring-2 focus:ring-primary text-on-surface font-body-md text-body-md shadow-xs outline-none transition-all placeholder:text-outline" placeholder="Enter your school or educator email..." required type="email" value={pilotEmail} onChange={(event) => setPilotEmail(event.target.value)} />
+                    <input aria-label="School or educator email" className="w-full pl-10 pr-4 py-3.5 rounded-xl bg-surface-container-low/40 border border-surface-container-high/60 focus:ring-2 focus:ring-primary text-on-surface font-body-md text-body-md shadow-xs outline-none transition-all placeholder:text-outline" placeholder="Enter your school or educator email..." required type="email" value={pilotEmail} onChange={(event) => setPilotEmail(event.target.value)} />
                   </div>
                   <button className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-primary text-on-primary font-label-lg text-label-lg font-semibold hover:bg-primary-container transition-all whitespace-nowrap shrink-0 disabled:opacity-60" type="submit" disabled={pilotState === 'sending'}>
                     {pilotState === 'sending' ? 'Sending...' : 'Request Coding Pilot'}
                   </button>
                 </form>
                 {pilotState === 'success' && (
-                  <div className="p-4 rounded-xl bg-surface-container text-on-surface font-label-md text-label-md" id="pilot-success-msg">
-                    🎉 Salamat! Our academic onboarding coordinator will email you within 24 hours with your coding lab sandbox credentials.
+                  <div className="p-4 rounded-xl bg-secondary-container/40 text-on-surface font-label-md text-label-md flex items-center justify-center gap-2" id="pilot-success-msg" role="status">
+                    <span className="material-symbols-outlined text-[18px] text-secondary shrink-0">check_circle</span>
+                    <span>Salamat! Our academic onboarding coordinator will email you within 24 hours with your coding lab sandbox credentials.</span>
                   </div>
                 )}
                 {pilotState === 'error' && (
@@ -746,22 +751,22 @@ export default function LandingPage() {
             </div>
           </section>
           {/* DEMO VIDEO / INTERACTIVE SIMULATION MODAL */}
-          <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-on-surface/60 backdrop-blur-sm ${demoOpen ? 'flex' : 'hidden'}`} id="demo-modal">
+          <div aria-labelledby="demo-modal-title" aria-modal="true" className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-on-surface/60 backdrop-blur-sm ${demoOpen ? 'flex' : 'hidden'}`} id="demo-modal" onClick={(event) => { if (event.target === event.currentTarget) setDemoOpen(false); }} role="dialog">
             <div className="relative w-full max-w-2xl bg-surface-container-lowest rounded-[24px] p-6 shadow-2xl space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-surface-container-high">
                 <div className="flex items-center gap-2">
                   <span className="w-8 h-8 rounded-lg bg-primary text-on-primary flex items-center justify-center">
                     <span className="material-symbols-outlined text-[18px]">play_circle</span>
                   </span>
-                  <span className="font-headline-sm text-headline-sm text-on-surface">2-Minute Classroom Walkthrough</span>
+                  <span className="font-headline-sm text-headline-sm text-on-surface" id="demo-modal-title">2-Minute Classroom Walkthrough</span>
                 </div>
-                <button className="w-8 h-8 rounded-full hover:bg-surface-container-high flex items-center justify-center text-on-surface-variant transition-colors" onClick={() => setDemoOpen(false)} type="button">
+                <button aria-label="Close demo preview" className="w-8 h-8 rounded-full hover:bg-surface-container-high flex items-center justify-center text-on-surface-variant transition-colors" onClick={() => setDemoOpen(false)} type="button">
                   <span className="material-symbols-outlined text-[20px]">close</span>
                 </button>
               </div>
               {/* Video Placeholder Container */}
               <div className="w-full aspect-video rounded-xl bg-surface-container-high relative overflow-hidden flex flex-col items-center justify-center text-center p-6">
-                <div className="absolute inset-0 w-full h-full bg-cover bg-center" data-alt="A bright high school classroom in the Philippines where an energetic Filipino teacher in formal DepEd uniform assists smiling Grade 8 students with tablet computers running diagnostic quizzes with colorful animated illustrations, soft warm natural sunlight" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuByAQQyWkiR8GmHKMaeGMXcq90qiOv15v4SHzx-saXMEsQTWJ5LSYKpRI9OG-5mZjpEI-C4RKBkfnydgmZknTsNg6MGxDBU5jOETzgrM4Mu-6DB_KOJg5aXAF4-cYmE2Rk64IfG8eD_TqQpkWYWTbebm6dOUBWNAskZNCfOyHoyOClPv_ca-knaAXWiSSl2LDaTkSQvM_La4j3NPEjaLOlzK-O4Anb9Qpw6iAr9wqMS92BW2RuAEpm0BQ')" }}></div>
+                <div aria-hidden="true" className="absolute inset-0 w-full h-full bg-cover bg-center" data-alt="A bright high school classroom in the Philippines where an energetic Filipino teacher in formal DepEd uniform assists smiling Grade 8 students with tablet computers running diagnostic quizzes with colorful animated illustrations, soft warm natural sunlight" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuByAQQyWkiR8GmHKMaeGMXcq90qiOv15v4SHzx-saXMEsQTWJ5LSYKpRI9OG-5mZjpEI-C4RKBkfnydgmZknTsNg6MGxDBU5jOETzgrM4Mu-6DB_KOJg5aXAF4-cYmE2Rk64IfG8eD_TqQpkWYWTbebm6dOUBWNAskZNCfOyHoyOClPv_ca-knaAXWiSSl2LDaTkSQvM_La4j3NPEjaLOlzK-O4Anb9Qpw6iAr9wqMS92BW2RuAEpm0BQ')" }}></div>
                 <div className="absolute inset-0 bg-primary/60 backdrop-blur-xs"></div>
                 <div className="relative z-10 flex flex-col items-center">
                   <div className="w-16 h-16 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center shadow-lg mb-3">

@@ -4,6 +4,10 @@
 # Password reset links use aralytics.password-reset.frontend-base-url.
 # Set FRONTEND_BASE_URL to the deployed frontend origin in production.
 spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/aralytics_prod}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
   flyway:
     locations: classpath:db/migration
   jpa:

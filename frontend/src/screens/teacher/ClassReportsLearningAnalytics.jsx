@@ -74,10 +74,10 @@ export default function ClassReportsLearningAnalytics() {
         <div className="flex flex-col gap-space-lg mb-space-xl">
           <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-space-md">
             <div className="max-w-2xl">
-              <h1 className="font-display-lg text-display-lg text-on-surface tracking-tight">
+              <h1 className="font-headline-lg text-headline-lg text-on-surface tracking-tight">
                 Cohort Reports &amp; Learning Analytics
               </h1>
-              <p className="font-body-lg text-body-lg text-on-surface-variant mt-space-xs">
+              <p className="font-body-md text-body-md text-on-surface-variant mt-space-xs">
                 Live mastery and intervention data for{' '}
                 <span className="font-semibold text-primary">{className}</span>.
               </p>
@@ -145,7 +145,7 @@ export default function ClassReportsLearningAnalytics() {
                 </span>
               </div>
               <div className="mt-space-md">
-                <span className="font-metric-number text-metric-number text-on-surface tracking-tight">
+                <span className="font-metric-number text-metric-number text-on-surface tracking-tight tabular-nums">
                   {metric.value}
                 </span>
                 <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">{metric.note}</p>
@@ -175,7 +175,7 @@ export default function ClassReportsLearningAnalytics() {
                   <div key={concept.concept}>
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="font-label-md text-label-md text-on-surface">{concept.concept}</span>
-                      <span className="font-label-md text-label-md text-on-surface font-bold">{pct}%</span>
+                      <span className="font-label-md text-label-md text-on-surface font-bold tabular-nums">{pct}%</span>
                     </div>
                     <div className="w-full h-3 bg-surface-container rounded-full overflow-hidden">
                       <div
@@ -208,13 +208,13 @@ export default function ClassReportsLearningAnalytics() {
               <table className="w-full min-w-[560px] text-left font-body-sm text-body-sm">
                 <thead>
                   <tr className="text-on-surface-variant bg-surface-container-low text-[12px] uppercase tracking-wider font-semibold">
-                    <th className="py-3 px-4 rounded-l-xl">Student</th>
-                    <th className="py-3 px-3">Average</th>
-                    <th className="py-3 px-3">Completed</th>
-                    <th className="py-3 px-4 rounded-r-xl">Weakest Concepts</th>
+                    <th className="py-3 px-4 rounded-l-xl" scope="col">Student</th>
+                    <th className="py-3 px-3" scope="col">Average</th>
+                    <th className="py-3 px-3" scope="col">Completed</th>
+                    <th className="py-3 px-4 rounded-r-xl" scope="col">Weakest Concepts</th>
                   </tr>
                 </thead>
-                <tbody className="text-on-surface">
+                <tbody className="divide-y divide-surface-container text-on-surface">
                   {atRisk.map((student) => {
                     const weakest = (student.mastery || [])
                       .slice()
@@ -225,10 +225,10 @@ export default function ClassReportsLearningAnalytics() {
                     return (
                       <tr className="hover:bg-surface-container-low/50 transition-colors" key={student.studentId}>
                         <td className="py-3.5 px-4 font-semibold">{student.fullName}</td>
-                        <td className="py-3.5 px-3 text-error font-semibold">
+                        <td className="py-3.5 px-3 text-error font-semibold tabular-nums">
                           {formatPercent(student.averageScore)}
                         </td>
-                        <td className="py-3.5 px-3 text-on-surface-variant">{student.completedCount}</td>
+                        <td className="py-3.5 px-3 text-on-surface-variant tabular-nums">{student.completedCount}</td>
                         <td className="py-3.5 px-4 text-on-surface-variant">{weakest || '—'}</td>
                       </tr>
                     )

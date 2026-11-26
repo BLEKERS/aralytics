@@ -5,27 +5,30 @@ Every directory and file in the repository, its responsibility, and which Stitch
 ```text
 aralytics/
 ├── .gitignore                              # Excludes node_modules, dist, .env*, editor junk, and root /screens/ + /fetch-screens.mjs
-├── .env.example                            # Frontend environment template (VITE_* prefix; no variables currently required)
+├── .env.example                            # Unified root env template (ENV=development|production + backend, DB, mail, AI, and VITE_*)
+├── docker-compose.yml                      # PostgreSQL 16 (healthcheck) + backend API on :8080 (reads root .env)
+├── check-env.ps1                           # Windows preflight check (Java 21+, Node 20+, frontend deps, Postgres :5432)
+├── run-app.bat                             # One-click Windows launcher loading root .env for backend (:8080) + frontend (:3000)
 ├── CONTRIBUTING.md                         # Enforced workflow: branch naming, commits, PR review, main protection, secrets policy
-├── SETUP.md                                # Developer quick-start, workspace commands, and default Student/Teacher credentials
-├── NAVIGATION.md                           # Frontend screen routes, navigation links, and backend /api/* endpoint map
-├── PRD.md                                   # Project-aligned product requirements; distinguishes prototype UI from planned production behavior
-├── HANDOFF.md                              # Architecture, design tokens, route map, Stitch -> React conversion rules
-├── LOG.md                                  # Chronological append-only log of every agent action
-├── FILETREE.md                             # This file — directory & file purpose map
-├── docs/                                   # Project documentation (pointer + supporting docs; PRD.md remains canonical)
-│   ├── requirements.md                     # Requirements index: canonical source is ../PRD.md; change process + MVP scope summary
-│   ├── architecture.md                     # Frontend architecture: routes, layout modes, tooling, data/state status, testing pointer
-│   └── team-roles.md                       # Team roster placeholders and role archetype descriptions
-├── backend/                                # Spring Boot 3.4 / Java 21 REST API (40% milestone); see backend/README.md
+├── docs/                                   # Project documentation (SETUP, NAVIGATION, PRD, HANDOFF, LOG, FILETREE, etc.)
+│   ├── SETUP.md                            # Developer quick-start, workspace commands, and default Student/Teacher credentials
+│   ├── NAVIGATION.md                       # Frontend screen routes, navigation links, and backend /api/* endpoint map
+│   ├── PRD.md                              # Product requirements; distinguishes MVP scope from planned post-MVP work
+│   ├── HANDOFF.md                          # Architecture, design tokens, route map, Stitch -> React conversion rules
+│   ├── LOG.md                              # Chronological append-only log of project changes
+│   ├── FILETREE.md                         # This file — directory & file purpose map
+│   ├── requirements.md                     # Requirements index + MVP scope summary
+│   ├── architecture.md                     # Architecture overview (frontend, backend, AI service)
+│   └── team-roles.md                       # Team roster and role descriptions
+├── backend/                                # Spring Boot 3.4 / Java 21 REST API; see backend/README.md
 │   ├── pom.xml                             # Dependencies (Web, JPA, Security, Validation, Actuator, Flyway, JJWT, springdoc) + failsafe *IT.java
 │   ├── mvnw / mvnw.cmd                     # Maven wrapper (Maven 3.9.9)
 │   ├── .mvn/wrapper/                       # Maven wrapper properties/jar
 │   ├── README.md                           # Backend setup, env vars, API map, security/data decisions, tests, limitations
-│   ├── .env.example                        # Backend environment template (DB, JWT, activation keys, CORS, optional AI)
 │   ├── .gitignore / .dockerignore          # Backend build output, .env, IDE files; Docker build context excludes
 │   ├── Dockerfile                          # Multi-stage Maven build + Temurin 21 JRE, non-root runtime
-│   ├── docker-compose.yml                  # PostgreSQL 16 (healthcheck) + backend API on :8080
+│   ├── docker/
+│   │   └── postgres-init.sql               # Creates aralytics_prod alongside aralytics on fresh Postgres volume init
 │   ├── src/main/resources/
 │   │   ├── application.yml                 # Base config: datasource, JPA, Flyway, JWT/activation/CORS properties, health-only Actuator
 │   │   ├── application-dev.yml             # Dev profile: dev seed + Swagger UI + debug logging
@@ -99,7 +102,7 @@ aralytics/
     ├── index.html                          # Vite HTML entry; tab title "Aralytics | AI Learning Analytics"; loads Google Fonts (Nunito Sans, Inter) + Material Symbols Outlined
     ├── package.json                        # Dependencies: react 19, react-dom 19, react-router-dom 7, @tailwindcss/vite 4, vite 8, oxlint
     ├── package-lock.json                   # Locked dependency tree
-    ├── vite.config.js                      # Vite 8 config with @vitejs/plugin-react and @tailwindcss/vite
+    ├── vite.config.js                      # Vite 8 config (@vitejs/plugin-react, @tailwindcss/vite, envDir: '..', VITE_APP_ENV from root ENV)
     │
     ├── tests/                              # Automated test home (no test files yet; strategy in tests/README.md)
     │   └── README.md                       # Test strategy: unit + smoke tests once a runner is chosen; Playwright route checks
@@ -125,7 +128,12 @@ aralytics/
             ├── public/                     # Public & Authentication screens (standalone chrome)
             │   ├── LandingPage.jsx         # Route: /                   <- screens/stitch/landing_page/code.html
             │   ├── LoginScreen.jsx         # Route: /login              <- screens/stitch/aralytics_login/code.html
-            │   └── AccountActivationScreen.jsx # Route: /register       <- screens/stitch/aralytics_account_registration_activation/code.html
+            │   ├── AccountActivationScreen.jsx # Route: /register       <- screens/stitch/aralytics_account_registration_activation/code.html
+            │   ├── ForgotPasswordScreen.jsx # Route: /forgot-password
+            │   └── ResetPasswordScreen.jsx # Route: /reset-password
+            ├── shared/
+            │   ├── ForbiddenScreen.jsx     # Route: /forbidden          (403 role-mismatch / access-denied page)
+            │   └── ProfileScreen.jsx       # Route: /profile            (Teacher AppShell or StudentHeader)
             ├── student/                    # Student View screens (standalone top navbar wired to /student/*)
             │   ├── StudentDashboard.jsx    # Route: /student/dashboard  <- screens/stitch/portal/code.html
             │   ├── StudentMyActivities.jsx # Route: /student/activities <- screens/stitch/aralytics_student_my_activities/code.html

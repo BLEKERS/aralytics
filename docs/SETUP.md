@@ -9,27 +9,25 @@
 - **Node.js**: `v20.x` or later (`v22.x` recommended)
 - **npm**: `v10.x` or later
 - **Git**: `v2.40+`
-- **Backend**: JDK 21+ and PostgreSQL 16 on `localhost:5432` (database `aralytics`, user/password `postgres`/`postgres`), or Docker to run `cd backend; docker compose up -d postgres`
+- **Backend**: JDK 21+ and PostgreSQL 16 on `localhost:5432` (databases `aralytics` and `aralytics_prod`, user/password `postgres`/`postgres`), or Docker to run `docker compose up -d` from the repository root (reads root `.env`).
 
 ---
 
 ## 2. Quick Start
 
 ```powershell
-# 1. Install frontend dependencies
-cd frontend
-npm install
+# 1. Create root .env (set ENV=development or ENV=production)
+Copy-Item .env.example .env
 
-# 2. Start the Vite development server (http://localhost:3000)
-npm run dev
-```
+# 2. Start PostgreSQL 16 + backend API (http://localhost:8080)
+docker compose up -d --build
 
-Or run commands directly from the repository root (`aralytics/`) using `--prefix frontend`:
-
-```powershell
+# 3. Install frontend dependencies & start Vite dev server (http://localhost:3000)
 npm --prefix frontend install
 npm --prefix frontend run dev
 ```
+
+*(On Windows with local PostgreSQL 16, you can also run `.\run-app.bat` from the repository root.)*
 
 ---
 
@@ -37,7 +35,7 @@ npm --prefix frontend run dev
 
 ### Login Screen (`/login`)
 
-The `/login` screen pre-fills default demo credentials automatically when switching between the **Student** and **Teacher / Educator** tabs:
+When `ENV=development` (and not a production `vite build`), `/login` pre-fills default demo credentials automatically when switching between the **Student** and **Teacher / Educator** tabs. When `ENV=production` or `vite build` runs, both fields start empty and no demo credentials are bundled:
 
 | Role | Identifier (Email / ID) | Alternate ID | Default Password | Redirects To |
 |---|---|---|---|---|
@@ -50,9 +48,7 @@ The `/login` screen pre-fills default demo credentials automatically when switch
 
 ### Account Activation & Registration (`/register`)
 
-When testing the institutional onboarding flow on `/register`, the backend must be running with the
-demo data (`SPRING_PROFILES_ACTIVE=dev,seed`). The screen calls `POST /api/auth/verify-key` then
-`POST /api/auth/activate`, and asks for full name and email in addition to the fields below.
+When testing the institutional onboarding flow on `/register`, the backend must be running with `ENV=development` (which activates `dev,seed` on `aralytics`). Seeded institution/key hints appear in development only and are hidden in `ENV=production` / `vite build`. The screen calls `POST /api/auth/verify-key` then `POST /api/auth/activate`, and asks for full name and email in addition to the fields below.
 
 | Role | School / Institution Code | Issued Access Key / PIN | Password Requirement | Redirects To |
 |---|---|---|---|---|

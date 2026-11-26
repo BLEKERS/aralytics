@@ -73,11 +73,8 @@ export default function StudentMyActivities() {
       <StudentHeader active="/student/activities" />
       <main className="w-full pt-20 bg-surface flex-1">
         <div className="max-w-7xl mx-auto px-gutter py-space-lg flex flex-col gap-space-lg">
-          <section className="flex flex-col md:flex-row md:items-end justify-between gap-space-md bg-surface-container-lowest p-space-lg rounded-xl shadow-sm">
+          <section className="flex flex-col md:flex-row md:items-end justify-between gap-space-md bg-surface-container-lowest p-space-lg rounded-2xl shadow-sm">
             <div className="flex flex-col gap-space-xs">
-              <span className="px-2.5 py-1 w-fit rounded-full bg-primary-container/10 text-primary font-label-sm text-label-sm uppercase tracking-wider font-bold">
-                Assigned Coding Activities
-              </span>
               <h1 className="font-headline-lg text-headline-lg text-on-surface tracking-tight font-extrabold">
                 My Activities
               </h1>
@@ -87,25 +84,25 @@ export default function StudentMyActivities() {
             </div>
             <div className="flex flex-wrap items-center gap-space-sm">
               <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface-container-low">
-                <span className="material-symbols-outlined text-primary text-[20px]">
+                <span aria-hidden="true" className="material-symbols-outlined text-primary text-[20px]">
                   assignment_turned_in
                 </span>
                 <div className="flex flex-col">
                   <span className="font-label-sm text-label-sm text-on-surface-variant leading-none">
                     Completion
                   </span>
-                  <span className="font-label-lg text-label-lg font-bold text-on-surface">
+                  <span className="font-label-lg text-label-lg font-bold text-on-surface tabular-nums">
                     {completed.length} of {list.length} Done
                   </span>
                 </div>
               </div>
               <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-secondary-fixed text-on-secondary-fixed">
-                <span className="material-symbols-outlined text-[20px]">insights</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[20px]">insights</span>
                 <div className="flex flex-col">
                   <span className="font-label-sm text-label-sm opacity-80 leading-none">
                     Diagnostic Avg
                   </span>
-                  <span className="font-label-lg text-label-lg font-bold">
+                  <span className="font-label-lg text-label-lg font-bold tabular-nums">
                     {averageScore === null ? '—' : `${averageScore.toFixed(1)}%`}
                   </span>
                 </div>
@@ -113,16 +110,22 @@ export default function StudentMyActivities() {
             </div>
           </section>
 
-          <div className="inline-flex p-1 rounded-2xl bg-surface-container-high max-w-full overflow-x-auto w-fit">
+          <div
+            aria-label="Filter activities"
+            className="inline-flex p-1 rounded-2xl bg-surface-container-high max-w-full overflow-x-auto w-fit"
+            role="tablist"
+          >
             {FILTERS.map((filter) => (
               <button
                 key={filter.value}
+                aria-selected={activeFilter === filter.value}
                 className={
                   activeFilter === filter.value
                     ? 'px-4 py-2 rounded-xl font-label-lg text-label-lg font-bold bg-surface-container-lowest text-primary shadow-sm transition-all shrink-0'
                     : 'px-4 py-2 rounded-xl font-label-lg text-label-lg font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all shrink-0'
                 }
                 onClick={() => setActiveFilter(filter.value)}
+                role="tab"
                 type="button"
               >
                 {filter.label}
@@ -135,11 +138,27 @@ export default function StudentMyActivities() {
             <DataError error={activities.error} onRetry={activities.reload} />
           )}
           {!activities.loading && !activities.error && list.length === 0 && (
-            <EmptyBlock
-              icon="assignment"
-              title="No activities here yet"
-              message="Your teacher has not published an activity for this filter."
-            />
+            <div className="flex flex-col items-center gap-space-md">
+              <EmptyBlock
+                className="w-full"
+                icon="assignment"
+                title="No activities here yet"
+                message={
+                  activeFilter === 'all'
+                    ? 'Your teacher has not published an activity yet.'
+                    : 'No activities match this filter.'
+                }
+              />
+              {activeFilter !== 'all' && (
+                <button
+                  className="px-4 py-2 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-semibold hover:bg-primary-container transition-colors"
+                  onClick={() => setActiveFilter('all')}
+                  type="button"
+                >
+                  Show all activities
+                </button>
+              )}
+            </div>
           )}
           {!activities.loading &&
             !activities.error &&
@@ -152,26 +171,25 @@ export default function StudentMyActivities() {
               return (
                 <article
                   key={activity.id}
-                  className="relative overflow-hidden bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-shadow flex flex-col gap-space-md"
+                  className="bg-surface-container-lowest rounded-2xl border border-outline-variant/20 p-space-lg shadow-sm hover:shadow-md transition-shadow flex flex-col gap-space-md"
                 >
-                  <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${meta.accent}`} />
-                  <div className="flex flex-wrap items-center justify-between gap-space-sm pl-2">
+                  <div className="flex flex-wrap items-center justify-between gap-space-sm">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className={`px-2.5 py-1 rounded-full font-label-sm text-label-sm font-bold ${meta.pill}`}>
                         {meta.label}
                       </span>
-                      <span className="font-label-sm text-label-sm text-on-surface-variant">
+                      <span className="font-label-sm text-label-sm text-on-surface-variant tabular-nums">
                         Due {formatDue(activity.dueDate)}
                       </span>
                     </div>
                     {scoreLabel(activity.score) && (
-                      <div className="flex items-center gap-1.5 font-label-md text-label-md text-secondary font-bold">
-                        <span className="material-symbols-outlined text-[16px]">stars</span>
+                      <div className="flex items-center gap-1.5 font-label-md text-label-md text-secondary font-bold tabular-nums">
+                        <span aria-hidden="true" className="material-symbols-outlined text-[16px]">stars</span>
                         Score: {scoreLabel(activity.score)}
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-space-md pl-2">
+                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-space-md">
                     <div className="flex flex-col gap-1 max-w-xl">
                       <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface">
                         {activity.title}
@@ -180,7 +198,7 @@ export default function StudentMyActivities() {
                         {activity.description || 'No description provided.'}
                       </p>
                       <div className="flex flex-wrap items-center gap-2 mt-2">
-                        <span className="px-2 py-0.5 rounded bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm">
+                        <span className="px-2 py-0.5 rounded bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm tabular-nums">
                           {activity.questionCount} Questions
                         </span>
                         {activity.topic && (
@@ -205,7 +223,7 @@ export default function StudentMyActivities() {
                         to={link}
                       >
                         <span>{completedActivity ? 'Review Feedback' : 'Start Activity'}</span>
-                        <span className="material-symbols-outlined text-[18px]">
+                        <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
                           {completedActivity ? 'chat_bubble_outline' : 'play_arrow'}
                         </span>
                       </Link>

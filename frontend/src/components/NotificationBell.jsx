@@ -20,7 +20,7 @@ function timeAgo(value) {
  */
 export default function NotificationBell({
   role = 'student',
-  buttonClassName = 'relative p-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors',
+  buttonClassName = 'relative p-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors cursor-pointer',
 }) {
   const [open, setOpen] = useState(false)
   const [state, setState] = useState({ loading: true, error: null, items: [] })
@@ -48,6 +48,15 @@ export default function NotificationBell({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role])
 
+  useEffect(() => {
+    if (!open) return undefined
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [open])
+
   const unread = state.items.some((item) => !item.isRead)
   const problem = state.error ? describeApiError(state.error) : null
 
@@ -65,31 +74,43 @@ export default function NotificationBell({
         title="Notifications"
         type="button"
       >
-        <span className="material-symbols-outlined text-[20px]">notifications</span>
+        <span aria-hidden="true" className="material-symbols-outlined text-[20px]">
+          notifications
+        </span>
         {unread && (
-          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-error ring-2 ring-surface-container-lowest" />
+          <span
+            aria-hidden="true"
+            className="absolute top-2 right-2 w-2 h-2 rounded-full bg-error ring-2 ring-surface-container-lowest"
+          />
         )}
       </button>
       {open && (
         <>
-          <button
-            aria-label="Close notifications"
-            className="fixed inset-0 z-40 cursor-default"
+          <div
+            aria-hidden="true"
+            className="fixed inset-0 z-40"
             onClick={() => setOpen(false)}
-            type="button"
           />
-          <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl bg-surface-container-lowest shadow-xl border border-outline-variant/30 z-50 overflow-hidden">
+          <div
+            aria-label="Notifications"
+            className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl bg-surface-container-lowest shadow-xl border border-outline-variant/30 z-50 overflow-hidden"
+            role="region"
+          >
             <div className="flex items-center justify-between px-4 py-3 border-b border-outline-variant/30">
               <span className="font-label-lg text-label-lg font-bold text-on-surface">
                 Notifications
               </span>
               <button
-                className="w-7 h-7 rounded-lg text-on-surface-variant hover:bg-surface-container flex items-center justify-center"
+                aria-label="Refresh notifications"
+                className="w-7 h-7 rounded-lg text-on-surface-variant hover:bg-surface-container flex items-center justify-center transition-colors cursor-pointer disabled:opacity-50"
+                disabled={state.loading}
                 onClick={load}
                 title="Refresh"
                 type="button"
               >
-                <span className="material-symbols-outlined text-[18px]">refresh</span>
+                <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
+                  refresh
+                </span>
               </button>
             </div>
             <div className="max-h-80 overflow-y-auto">

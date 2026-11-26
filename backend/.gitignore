@@ -5,7 +5,6 @@ target/
 # Local environment and secrets
 .env
 .env.*
-!.env.example
 
 # Logs
 *.log
