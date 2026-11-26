@@ -100,6 +100,7 @@ All Stitch exports share the "Warm Editorial EdTech" Material-3-inspired palette
 | `/register` | `frontend/src/screens/public/AccountActivationScreen.jsx` | `screens/stitch/aralytics_account_registration_activation/code.html` | Standalone (Auth Header + Card + Footer) |
 | `/forgot-password` | `frontend/src/screens/public/ForgotPasswordScreen.jsx` | — | Standalone (Auth Header + Card + Footer) |
 | `/reset-password` | `frontend/src/screens/public/ResetPasswordScreen.jsx` | — | Standalone (Auth Header + Card + Footer) |
+| `/forbidden` | `frontend/src/screens/shared/ForbiddenScreen.jsx` | — | Standalone (Brand Header + 403 Card + Centered Footer) |
 | `/profile` | `frontend/src/screens/shared/ProfileScreen.jsx` | — | Role-aware (`AppShell` for Teacher, `StudentHeader` for Student) |
 | `/student/dashboard` | `frontend/src/screens/student/StudentDashboard.jsx` | `screens/stitch/portal/code.html` | Standalone (Student Portal Header + Mobile Nav + Footer) |
 | `/student/activities` | `frontend/src/screens/student/StudentMyActivities.jsx` | `screens/stitch/aralytics_student_my_activities/code.html` | Standalone (Student Activities Header + Mobile Nav + Footer) |

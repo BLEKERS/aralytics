@@ -1,9 +1,9 @@
 # Aralytics - Product Requirements Document (PRD)
 
-**Version:** 2.0
-**Date:** November 5, 2026
+**Version:** 2.1
+**Date:** November 25, 2026
 **Author:** James Benedict De la Peña, Dassel Bacaltos, Kharl Christian Tumamak
-**Status:** MVP Core Complete (40% Backend / Frontend Integration)
+**Status:** MVP Core Complete (Should-Have extensions implemented except live LLM)
 
 ---
 
@@ -82,8 +82,8 @@ The database accurately reflects the ERD: `SCHOOL`, `USER`, `SUBSCRIPTION`, `CLA
 
 #### 6.1.1. User Authentication & Account Management
 - **Fixed System Access:** No public self-registration. Accounts are provisioned via Institution Code (`STJUDE-MNL-2025`) and issued Access Keys (`KEY-8821-PY` / `FAC-2025-DEPED`).
-- **Role-Based Access Control (RBAC):** Students can only see their own data. Teachers can only see data for their assigned classes.
-- **JWT Sessions:** Secure, stateless login returning a Bearer token.
+- **Role-Based Access Control (RBAC):** Students can only see their own data; teachers can only see data for their assigned classes. Wrong-role route navigation renders the `/forbidden` (403) screen.
+- **JWT Sessions:** Secure, stateless login returning a Bearer token, with password reset and profile management.
 
 #### 6.1.2. Student Dashboard & Quiz Engine
 - Students can view assigned and completed activities.
@@ -91,15 +91,10 @@ The database accurately reflects the ERD: `SCHOOL`, `USER`, `SUBSCRIPTION`, `CLA
 - **Deterministic Scoring:** Scores are calculated server-side by comparing submitted answers to the `correctAnswer` in the database (no AI guessing).
 - **Idempotency:** A student cannot submit the same quiz twice (returns 409 Conflict).
 
-#### 6.1.3. AI Diagnostic & Feedback Engine (Mock)
-- Upon submission, the `MockDiagnosticEngine` parses the questions' associated `CONCEPT` tags.
-- It generates a supportive, 2-to-4 sentence English response that identifies strengths and areas for practice without leaking the correct answer.
-- **Fallback State:** If feedback generation fails, the system returns a `202 Accepted` with a `PENDING` status, allowing the student to retry.
-
-#### 6.1.4. Teacher Dashboard & Roster
+#### 6.1.3. Teacher Dashboard & Roster
 - Teachers can view class-wide KPIs (Average score, completion rate).
 - Teachers can see a roster of students and identify those falling below the **70% intervention threshold**.
-- Teachers can drill down into an individual student's diagnostic feedback.
+- Teachers can drill down into an individual student's diagnostic breakdown and manage/author quizzes.
 
 ---
 
@@ -119,14 +114,14 @@ The database accurately reflects the ERD: `SCHOOL`, `USER`, `SUBSCRIPTION`, `CLA
 - The system must send in-app notifications for upcoming due dates and completion milestones.
 - **Implementation:** `NotificationService` writes to `NOTIFICATION` on publish and submission; student/teacher endpoints list them.
 
-#### 6.2.4. Student Feedback History & Practice Drills (FR-PROG) - **✅ DONE**
-- Students must have a searchable history of all past feedback.
-- Students must be able to generate a "Practice Drill" (3 similar questions) based on their weak concepts.
+#### 6.2.4. Student Progress History & Practice Drills (FR-PROG) - **✅ DONE**
+- Students must have a searchable history of progress and past assessments (`/student/progress`).
+- Students must be able to generate a "Practice Drill" (3 similar questions) based on weak concepts.
 - **Endpoints:** `GET /api/student/progress/history`, `POST /api/student/feedback/{submissionId}/practice-drill`.
 
-#### 6.2.5. Real AI Integration (FR-AI) - **⏳ NOT YET**
-- Replace the `MockDiagnosticEngine` with the `LlmDiagnosticEngine`.
-- **Requirement:** Connect to a locally hosted model (e.g., Ollama, Llama 3) to generate the diagnostic feedback dynamically. This is the only post-MVP item still open.
+#### 6.2.5. AI Diagnostic & Feedback Engine (FR-AI) - **⚙️ MOCK IMPLEMENTED / LIVE LLM PLANNED**
+- Upon submission, the `MockDiagnosticEngine` parses the questions' associated `CONCEPT` tags and generates a supportive, 2-to-4 sentence English response identifying strengths and areas for practice without leaking the correct answer (returns `202 Accepted` with `PENDING` status on fallback, allowing retry).
+- **Real AI Integration (⏳ NOT YET):** Replace `MockDiagnosticEngine` with `LlmDiagnosticEngine` connected to a locally hosted model (e.g., Ollama, Llama 3) to generate diagnostic feedback dynamically.
 
 ---
 
@@ -178,9 +173,9 @@ The database accurately reflects the ERD: `SCHOOL`, `USER`, `SUBSCRIPTION`, `CLA
 
 | Phase | Timeline | Key Deliverables | Status |
 |-------|----------|------------------|--------|
-| **Phase 1: MVP Core** | Months 1-4 | Auth, Quiz Engine, Mock AI, Teacher Dashboard. | ✅ **DONE** |
+| **Phase 1: MVP Core** | Months 1-4 | Auth (`/forbidden` RBAC), Quiz Engine, Teacher Dashboard. | ✅ **DONE** |
 | **Phase 2: Frontend Integration** | Month 4 | Wire React frontend to Spring Boot API. | ✅ **DONE**|
-| **Phase 3: Post-MVP Features** | Months 5-6 | Notifications, Settings, CSV/PDF Exports, Feedback History. | ✅ **DONE** |
+| **Phase 3: Post-MVP (Should-Have)** | Months 5-6 | Notifications, Settings, CSV/PDF Exports, Progress History, Mock AI Diagnostic Engine. | ✅ **DONE** |
 | **Phase 4: Real AI & Pilot** | Months 7-8 | Integrate local LLM, onboard 2-3 pilot schools. | ⏳ *Planned* |
 | **Phase 5: Scale & Expand** | Months 9+ | Gamification, multi-language, global expansion. | ⏳ *Planned* |
 
